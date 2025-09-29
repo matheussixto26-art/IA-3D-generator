@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Jogo Multiplayer Mobile</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      margin: 0;
+      overflow: hidden;
+      touch-action: none;
+      font-family: Arial, sans-serif;
+      background: #000;
+    }
+    canvas { display: block; }
+
+    /* Botões de controle */
+    .controls {
+      position: fixed;
+      bottom: 20px;
+      width: 100%;
+      display: flex;
+      justify-content: space-around;
+      pointer-events: none;
+    }
+
+    .dpad {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .btn {
+      width: 60px;
+      height: 60px;
+      background: rgba(255, 255, 255, 0.3);
+      border: 2px solid white;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 20px;
+      pointer-events: auto;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .jump-btn {
+      width: 80px;
+      height: 80px;
+      background: rgba(0, 200, 255, 0.4);
+      border: 3px solid #0ff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 24px;
+      pointer-events: auto;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #info {
+      position: fixed;
+      top: 10px;
+      width: 100%;
+      text-align: center;
+      color: white;
+      font-size: 16px;
+      pointer-events: none;
+      text-shadow: 0 0 5px black;
+    }
+  </style>
+</head>
+<body>
+  <div id="info">Conectando...</div>
+
+  <div class="controls">
+    <div class="dpad">
+      <div class="btn" id="btn-w">↑</div>
+      <div class="btn" id="btn-a">←</div>
+      <div class="btn" id="btn-d">→</div>
+      <div class="btn" id="btn-s">↓</div>
+    </div>
+    <div class="jump-btn" id="btn-space">JUMP</div>
+  </div>
+
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    const socket = io();
+
+    // Cena
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x222222);
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    document.body.appendChild(renderer.domElement);
+
+    // Chão
+    const groundGeometry = new THREE.PlaneGeometry(100, 100);
+    const groundMaterial = new THREE.MeshBasicMaterial({ color: 0x444444, side: THREE.DoubleSide });
+    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+    ground.rotation.x = Math.PI / 2;
+    scene.add(ground);
+
+    // Luz
+    const light = new THREE.PointLight(0xffffff, 1, 100);
+    light.position.set(10, 20, 10);
+    scene.add(light);
+    scene.add(new THREE.AmbientLight(0x404040));
+
+    // Jogadores
+    const players = {};
+    const colors = [0xff4444, 0x4444ff];
+    let myId = null;
+    let isJumping = false;
+    let jumpVelocity = 0;
+    const gravity = 0.02;
+    const jumpStrength = 0.3;
+
+    function createPlayer(id, x = 0, y = 1, z = 0) {
+      const geometry = new THREE.BoxGeometry(1, 1, 1);
+      const material = new THREE.MeshLambertMaterial({ color: colors[Object.keys(players).length % 2] });
+      const cube = new THREE.Mesh(geometry, material);
+      cube.position.set(x, y, z);
+      scene.add(cube);
+      players[id] = { mesh: cube, color: material.color.getHex() };
+    }
+
+    // Controles (teclado + toque)
+    const input = { w: false, a: false, s: false, d: false, space: false };
+
+    function bindButton(id, key) {
+      const btn = document.getElementById(id);
+      const set = (val) => input[key] = val;
+      btn.addEventListener('pointerdown', () => set(true));
+      btn.addEventListener('pointerup', () => set(false));
+      btn.addEventListener('pointerleave', () => set(false));
+      // Para mobile touch fallback
+      btn.addEventListener('touchstart', (e) => { e.preventDefault(); set(true); });
+      btn.addEventListener('touchend', () => set(false));
+    }
+
+    bindButton('btn-w', 'w');
+    bindButton('btn-a', 'a');
+    bindButton('btn-s', 's');
+    bindButton('btn-d', 'd');
+    bindButton('btn-space', 'space');
+
+    // Teclado (desktop)
+    window.addEventListener('keydown', (e) => {
+      const k = e.key.toLowerCase();
+      if (['w','a','s','d',' '].includes(k)) {
+        input[k === ' ' ? 'space' : k] = true;
+        e.preventDefault();
+      }
+    });
+    window.addEventListener('keyup', (e) => {
+      const k = e.key.toLowerCase();
+      if (['w','a','s','d',' '].includes(k)) {
+        input[k === ' ' ? 'space' : k] = false;
+      }
+    });
+
+    // Conexão
+    socket.on('init', (data) => {
+      myId = data.id;
+      document.getElementById('info').textContent = 'Conectado! Use os botões para mover.';
+      data.players.forEach(p => {
+        if (!players[p.id]) createPlayer(p.id, p.x, p.y, p.z);
+      });
+    });
+
+    socket.on('newPlayer', (player) => {
+      if (!players[player.id]) createPlayer(player.id, player.x, player.y, player.z);
+    });
+
+    socket.on('removePlayer', (id) => {
+      if (players[id]) {
+        scene.remove(players[id].mesh);
+        delete players[id];
+      }
+    });
+
+    socket.on('updatePositions', (allPlayers) => {
+      allPlayers.forEach(p => {
+        if (players[p.id] && p.id !== myId) {
+          players[p.id].mesh.position.set(p.x, p.y, p.z);
+        }
+      });
+    });
+
+    // Física e renderização
+    const moveSpeed = 0.12;
+    camera.position.set(0, 15, 25);
+    camera.lookAt(0, 0, 0);
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      if (myId && players[myId]) {
+        const pos = players[myId].mesh.position;
+
+        // Pulo
+        if (input.space && !isJumping && pos.y <= 1.1) {
+          isJumping = true;
+          jumpVelocity = jumpStrength;
+        }
+
+        if (isJumping) {
+          pos.y += jumpVelocity;
+          jumpVelocity -= gravity;
+          if (pos.y <= 1) {
+            pos.y = 1;
+            isJumping = false;
+            jumpVelocity = 0;
+          }
+        }
+
+        // Movimento horizontal
+        let moved = false;
+        if (input.w) { pos.z -= moveSpeed; moved = true; }
+        if (input.s) { pos.z += moveSpeed; moved = true; }
+        if (input.a) { pos.x -= moveSpeed; moved = true; }
+        if (input.d) { pos.x += moveSpeed; moved = true; }
+
+        // Limites da arena
+        pos.x = Math.max(-49, Math.min(49, pos.x));
+        pos.z = Math.max(-49, Math.min(49, pos.z));
+
+        // Enviar posição para o servidor
+        if (moved || isJumping) {
+          socket.emit('move', { x: pos.x, y: pos.y, z: pos.z });
+        }
+      }
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // Redimensionar
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
