@@ -1,212 +1,325 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
-  <title>Jogo Mobile Simples</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      margin: 0;
-      overflow: hidden;
-      touch-action: none;
-      background: #000;
-      font-family: Arial, sans-serif;
-    }
-    canvas { display: block; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Brainrot Tycoon - V0.4.2 (Movimento Corrigido)</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Arial', sans-serif; }
+        canvas { display: block; }
+        .label {
+            color: #FFF; font-family: Arial, sans-serif;
+            text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+            text-align: center;
+        }
+        
+        /* --- UI --- */
+        #ui-container { position: fixed; bottom: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        #joystick-container { position: absolute; bottom: 20px; left: 20px; width: 120px; height: 120px; background-color: rgba(0,0,0,0.2); border-radius: 50%; pointer-events: auto; user-select: none; -webkit-user-select: none; }
+        #joystick-handle { position: absolute; top: 30px; left: 30px; width: 60px; height: 60px; background-color: rgba(255,255,255,0.5); border-radius: 50%; }
+        #jump-button { position: absolute; bottom: 30px; right: 30px; width: 80px; height: 80px; background-color: rgba(0, 162, 255, 0.7); border: 3px solid rgba(255,255,255,0.8); border-radius: 50%; font-size: 18px; color: white; font-weight: bold; pointer-events: auto; user-select: none; -webkit-user-select: none; }
+        
+        #money-display { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); padding: 10px 20px; background-color: rgba(0, 0, 0, 0.5); color: white; border-radius: 10px; font-size: 24px; font-weight: bold; border: 2px solid rgba(255,255,255,0.7); }
+        #money-display #generation-rate { color: #8cff78; font-size: 18px; margin-left: 10px; }
+        #buy-button { position: absolute; display: none; padding: 15px 25px; font-size: 18px; font-weight: bold; color: white; background-color: #28a745; border: 2px solid #218838; border-radius: 10px; cursor: pointer; pointer-events: auto; z-index: 10; }
 
-    /* Botões */
-    #forward-btn, #jump-btn {
-      position: fixed;
-      bottom: 30px;
-      width: 100px;
-      height: 100px;
-      border-radius: 50%;
-      border: 3px solid white;
-      background: rgba(255, 255, 255, 0.2);
-      color: white;
-      font-size: 18px;
-      font-weight: bold;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
-      pointer-events: auto;
-      text-shadow: 0 0 6px black;
-    }
+        .modal-panel { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(30, 30, 30, 0.9); border: 2px solid #555; border-radius: 15px; padding: 25px; z-index: 100; pointer-events: auto; color: white; width: 300px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .modal-panel h2 { text-align: center; margin-top: 0; }
+        .modal-panel input { width: calc(100% - 20px); padding: 10px; margin-bottom: 15px; border-radius: 5px; border: 1px solid #444; background-color: #333; color: white; }
+        .modal-panel button { width: 100%; padding: 12px; border-radius: 5px; border: none; background-color: #007bff; color: white; font-size: 16px; cursor: pointer; }
+        .modal-panel .error-message { color: #ff4d4d; text-align: center; margin-top: 10px; height: 20px; }
+        .modal-panel .close-btn { position: absolute; top: 10px; right: 15px; font-size: 24px; color: white; cursor: pointer; }
 
-    #forward-btn {
-      left: 30px;
-    }
-
-    #jump-btn {
-      right: 30px;
-      background: rgba(0, 200, 255, 0.3);
-      border-color: #0ff;
-    }
-
-    #info {
-      position: fixed;
-      top: 15px;
-      width: 100%;
-      text-align: center;
-      color: white;
-      font-size: 16px;
-      text-shadow: 0 0 5px black;
-      pointer-events: none;
-    }
-  </style>
+        #menu-button { position: absolute; top: 20px; left: 20px; width: 50px; height: 50px; background-color: rgba(0,0,0,0.5); border-radius: 10px; pointer-events: auto; cursor: pointer; z-index: 50; border: 2px solid white; }
+        #menu-button .bar { width: 30px; height: 4px; background-color: white; margin: 6px auto; }
+        #admin-menu { display: none; position: absolute; top: 80px; left: 20px; background-color: rgba(30,30,30,0.9); border-radius: 10px; padding: 10px; pointer-events: auto; z-index: 50; }
+        #admin-menu button { display: block; width: 180px; padding: 10px; margin: 5px 0; background-color: #444; color: white; border: 1px solid #666; border-radius: 5px; text-align: left; }
+        #admin-menu button:disabled { color: #888; background-color: #333; }
+    </style>
 </head>
 <body>
-  <div id="info">Conectando...</div>
-  <div id="forward-btn">▶️ Frente</div>
-  <div id="jump-btn">⬆️ Pular</div>
 
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script>
-    const socket = io();
+    <div id="ui-container">
+        <div id="joystick-container"><div id="joystick-handle"></div></div>
+        <button id="jump-button">Pular</button>
+        <div id="money-display">$100 <span id="generation-rate">+$0/s</span></div>
+        <div id="menu-button"> <div class="bar"></div> <div class="bar"></div> <div class="bar"></div> </div>
+        <div id="admin-menu">
+            <button id="menu-login-btn">Fazer Login ADM</button>
+            <button id="menu-event-btn" disabled>Evento Galaxy</button>
+            <button id="menu-money-btn" disabled>Dar Dinheiro</button>
+            <button id="menu-ban-btn" disabled>Banir Jogador</button>
+        </div>
+    </div>
+    <button id="buy-button">Comprar</button>
 
-    // Cena
+    <div id="login-panel" class="modal-panel">
+        <span class="close-btn">&times;</span> <h2>Painel ADM</h2> <input type="text" id="admin-user" placeholder="Usuário"> <input type="password" id="admin-pass" placeholder="Senha"> <div id="login-error" class="error-message"></div> <button id="admin-login-btn">Login</button>
+    </div>
+    <div id="ban-panel" class="modal-panel">
+        <span class="close-btn">&times;</span> <h2>Banir Jogador</h2> <input type="text" id="ban-user" placeholder="Nome do Jogador"> <input type="text" id="ban-reason" placeholder="Motivo"> <div id="ban-error" class="error-message"></div> <button id="ban-confirm-btn">Banir</button>
+    </div>
+
+<script type="importmap">
+    { "imports": { "three": "https://unpkg.com/three@0.164.1/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.164.1/examples/jsm/" } }
+</script>
+
+<script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+    // --- Configuração ---
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x1a1a2e);
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    scene.background = new THREE.Color(0x87CEEB);
+    const originalSkyColor = scene.background.clone();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.shadowMap.enabled = true;
     document.body.appendChild(renderer.domElement);
+    const labelRenderer = new CSS2DRenderer();
+    labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    labelRenderer.domElement.style.position = 'absolute'; labelRenderer.domElement.style.top = '0px'; labelRenderer.domElement.style.pointerEvents = 'none';
+    document.body.appendChild(labelRenderer.domElement);
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true; controls.enablePan = false; controls.enableRotate = true;
+    controls.maxPolarAngle = Math.PI / 1.8; controls.minDistance = 5; controls.maxDistance = 25;
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2); scene.add(ambientLight);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    directionalLight.position.set(50, 100, 75); directionalLight.castShadow = true;
+    directionalLight.shadow.mapSize.width = 2048; directionalLight.shadow.mapSize.height = 2048;
+    scene.add(directionalLight);
 
-    // Chão (arena)
-    const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(200, 200),
-      new THREE.MeshBasicMaterial({ color: 0x16213e, side: THREE.DoubleSide })
-    );
-    ground.rotation.x = Math.PI / 2;
-    scene.add(ground);
+    // --- Variáveis Globais ---
+    const clock = new THREE.Clock(); const colliders = []; const laserTriggers = []; const activeBrainrots = []; const allBases = []; let stars; let isGalaxyEventActive = false;
+    const MY_PLAYER_ID = 0; let playerMoney = 100; let totalGenerationPerSecond = 0; let targetBrainrot = null; let isAdmin = false;
+    const playerSpeed = 8.0; const playerHeight = 3.5; const jumpHeight = 10.0; const gravity = 25.0; let playerVelocity = new THREE.Vector3(); let onGround = false; const moveDirection = new THREE.Vector2(); const playerSize = new THREE.Vector3(1.5, playerHeight, 0.8);
+    const moneyDisplay = document.getElementById('money-display');
+    const generationRateSpan = document.getElementById('generation-rate');
 
-    // Luz
-    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    dirLight.position.set(10, 20, 10);
-    scene.add(dirLight);
-
-    // Jogadores
-    const players = {};
-    const colors = [0xff6b6b, 0x4cc9f0];
-    let myId = null;
-    let isJumping = false;
-    let jumpVelocity = 0;
-    const gravity = 0.025;
-    const jumpStrength = 0.35;
-
-    function createPlayer(id, x = 0, y = 1, z = 0) {
-      const cube = new THREE.Mesh(
-        new THREE.BoxGeometry(1, 1, 1),
-        new THREE.MeshLambertMaterial({ color: colors[Object.keys(players).length % 2] })
-      );
-      cube.position.set(x, y, z);
-      scene.add(cube);
-      players[id] = { mesh: cube };
+    function updateMoneyDisplay() {
+        moneyDisplay.firstChild.textContent = `$${Math.floor(playerMoney)} `;
+        generationRateSpan.textContent = `+$${totalGenerationPerSecond}/s`;
     }
 
-    // Controles
-    let moveForward = false;
-    let jumpPressed = false;
-
-    function setupButton(id, action) {
-      const btn = document.getElementById(id);
-      const down = () => action(true);
-      const up = () => action(false);
-      btn.addEventListener('pointerdown', down);
-      btn.addEventListener('pointerup', up);
-      btn.addEventListener('pointerleave', up);
-      // Mobile fallback
-      btn.addEventListener('touchstart', (e) => { e.preventDefault(); down(); });
-      btn.addEventListener('touchend', up);
-    }
-
-    setupButton('forward-btn', (val) => moveForward = val);
-    setupButton('jump-btn', (val) => jumpPressed = val);
-
-    // Conexão com servidor
-    socket.on('init', (data) => {
-      myId = data.id;
-      document.getElementById('info').textContent = '🟢 Conectado! Toque nos botões para jogar.';
-      data.players.forEach(p => {
-        if (!players[p.id]) createPlayer(p.id, p.x, p.y, p.z);
-      });
-    });
-
-    socket.on('newPlayer', (p) => {
-      if (!players[p.id]) createPlayer(p.id, p.x, p.y, p.z);
-    });
-
-    socket.on('removePlayer', (id) => {
-      if (players[id]) {
-        scene.remove(players[id].mesh);
-        delete players[id];
-      }
-    });
-
-    socket.on('updatePositions', (allPlayers) => {
-      allPlayers.forEach(p => {
-        if (players[p.id] && p.id !== myId) {
-          players[p.id].mesh.position.set(p.x, p.y, p.z);
+    // --- Lógica Brainrot ---
+    const BRAINROT_DATA = { Common: [ { name: 'Skibidi', price: 10, generation: 1, color: 0x8B4513 }, { name: 'Kai Cenat', price: 15, generation: 2, color: 0xADD8E6 }, { name: 'The Rizzler', price: 20, generation: 3, color: 0x90EE90 } ], Rare: [ { name: 'Baby Gronk', price: 50, generation: 10, color: 0xFFD700 }, { name: 'Sigma', price: 75, generation: 15, color: 0xC0C0C0 } ], Epic: [ { name: 'Giga Chad', price: 200, generation: 50, color: 0xFFC0CB } ] };
+    function spawnBrainrot() { const rand = Math.random(); let rarity; if (rand < 0.6) rarity = 'Common'; else if (rand < 0.9) rarity = 'Rare'; else rarity = 'Epic'; const types = BRAINROT_DATA[rarity]; const data = types[Math.floor(Math.random() * types.length)]; const geometry = new THREE.SphereGeometry(1, 32, 16); const material = new THREE.MeshStandardMaterial({ color: data.color }); const mesh = new THREE.Mesh(geometry, material); mesh.castShadow = true; mesh.position.set(0, 1, -mapSize / 2 + 5); mesh.userData = { ...data, ownerId: null, rarity: rarity, state: 'onConveyor', accumulatedMoney: 0, destination: null }; const textDiv = document.createElement('div'); textDiv.className = 'label'; textDiv.innerHTML = `${data.name}<br><span style="color: ${rarity === 'Common' ? '#FFF' : rarity === 'Rare' ? '#FFD700' : '#FF69B4'}">${rarity}</span><br>$${data.price}`; const textLabel = new CSS2DObject(textDiv); textLabel.position.y = 2.0; mesh.add(textLabel); scene.add(mesh); activeBrainrots.push(mesh); }
+    
+    // --- Mapa e Estruturas ---
+    const mapSize = 200;
+    const groundGeo = new THREE.PlaneGeometry(mapSize, mapSize);
+    const groundMat = new THREE.MeshLambertMaterial({ color: 0x228B22 });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+    const conveyor = new THREE.Mesh(new THREE.BoxGeometry(8, 0.05, mapSize), new THREE.MeshLambertMaterial({ color: 0xDC143C }));
+    conveyor.position.y = 0.03; scene.add(conveyor);
+    
+    const wallHeight = 20; const wallThickness = 2; const wallOffset = mapSize / 2 - wallThickness / 2; const tunnelWidth = 12; const tunnelDepth = 4; const tunnelHeight = 8; const wallMaterialGrey = new THREE.MeshLambertMaterial({ color: 0x808080 }); const wallMaterialBrown = new THREE.MeshLambertMaterial({ color: 0x8B4513 }); const wallMaterialGreen = new THREE.MeshLambertMaterial({ color: 0x006400 }); const tunnelMaterialGrey = new THREE.MeshLambertMaterial({ color: 0x606060 });
+    function createLayeredWall(width, height) { const wallGroup = new THREE.Group(); const layerHeight = height / 3; const greyLayer = new THREE.Mesh(new THREE.BoxGeometry(width, layerHeight, wallThickness), wallMaterialGrey); greyLayer.position.y = layerHeight * 0.5; const brownLayer = new THREE.Mesh(new THREE.BoxGeometry(width, layerHeight, wallThickness), wallMaterialBrown); brownLayer.position.y = layerHeight * 1.5; const greenLayer = new THREE.Mesh(new THREE.BoxGeometry(width, layerHeight, wallThickness), wallMaterialGreen); greenLayer.position.y = layerHeight * 2.5; wallGroup.add(greyLayer, brownLayer, greenLayer); wallGroup.traverse(node => { if(node.isMesh) { node.castShadow = true; node.receiveShadow = true; node.userData.isWall = true; }}); return wallGroup; }
+    const sideWall = createLayeredWall(mapSize, wallHeight); sideWall.rotation.y = Math.PI / 2; sideWall.position.x = -wallOffset; scene.add(sideWall); sideWall.traverse(node => { if (node.isMesh) colliders.push(node) });
+    const sideWall2 = createLayeredWall(mapSize, wallHeight); sideWall2.rotation.y = Math.PI / 2; sideWall2.position.x = wallOffset; scene.add(sideWall2); sideWall2.traverse(node => { if (node.isMesh) colliders.push(node) });
+    const wallSegmentWidth = (mapSize - tunnelWidth) / 2; 
+    const backWallLeft = createLayeredWall(wallSegmentWidth, wallHeight); backWallLeft.position.set(-(tunnelWidth / 2) - (wallSegmentWidth / 2), 0, wallOffset); scene.add(backWallLeft); backWallLeft.traverse(node => { if (node.isMesh) colliders.push(node) });
+    const backWallRight = createLayeredWall(wallSegmentWidth, wallHeight); backWallRight.position.set((tunnelWidth / 2) + (wallSegmentWidth / 2), 0, wallOffset); scene.add(backWallRight); backWallRight.traverse(node => { if (node.isMesh) colliders.push(node) });
+    const frontWallLeft = createLayeredWall(wallSegmentWidth, wallHeight); frontWallLeft.position.set(-(tunnelWidth / 2) - (wallSegmentWidth / 2), 0, -wallOffset); scene.add(frontWallLeft); frontWallLeft.traverse(node => { if (node.isMesh) colliders.push(node) });
+    const frontWallRight = createLayeredWall(wallSegmentWidth, wallHeight); frontWallRight.position.set((tunnelWidth / 2) + (wallSegmentWidth / 2), 0, -wallOffset); scene.add(frontWallRight); frontWallRight.traverse(node => { if (node.isMesh) colliders.push(node) });
+    const wallAboveTunnel = createLayeredWall(tunnelWidth, wallHeight - tunnelHeight); wallAboveTunnel.position.set(0, tunnelHeight, -wallOffset); scene.add(wallAboveTunnel); wallAboveTunnel.traverse(node => { if (node.isMesh) colliders.push(node) });
+    const wallAboveTunnel2 = createLayeredWall(tunnelWidth, wallHeight - tunnelHeight); wallAboveTunnel2.position.set(0, tunnelHeight, wallOffset); scene.add(wallAboveTunnel2); wallAboveTunnel2.traverse(node => { if (node.isMesh) colliders.push(node) });
+    function createTunnelStructure() { const tunnelGroup = new THREE.Group(); const tunnelGapHeight = 6; const sideThickness = 1.5; const base = new THREE.Mesh(new THREE.BoxGeometry(tunnelWidth, 0.5, tunnelDepth), tunnelMaterialGrey); base.position.y = 0.25; const leftSide = new THREE.Mesh(new THREE.BoxGeometry(sideThickness, tunnelGapHeight + 0.5, tunnelDepth), tunnelMaterialGrey); leftSide.position.set(-(tunnelWidth / 2) + (sideThickness / 2), tunnelGapHeight / 2 + 0.25, 0); const rightSide = new THREE.Mesh(new THREE.BoxGeometry(sideThickness, tunnelGapHeight + 0.5, tunnelDepth), tunnelMaterialGrey); rightSide.position.set((tunnelWidth / 2) - (sideThickness / 2), tunnelGapHeight / 2 + 0.25, 0); const topWall = new THREE.Mesh(new THREE.BoxGeometry(tunnelWidth, tunnelHeight - tunnelGapHeight - 0.5, tunnelDepth), tunnelMaterialGrey); topWall.position.y = tunnelGapHeight + 0.5 + ((tunnelHeight - tunnelGapHeight - 0.5) / 2); const darkEntrance = new THREE.Mesh(new THREE.BoxGeometry(tunnelWidth - (2 * sideThickness), tunnelGapHeight, 0.1), new THREE.MeshBasicMaterial({ color: 0x0A0A0A })); darkEntrance.position.set(0, tunnelGapHeight / 2 + 0.5, tunnelDepth / 2 - 0.1); tunnelGroup.add(base, leftSide, rightSide, topWall, darkEntrance); tunnelGroup.traverse(node => { if(node.isMesh) { node.castShadow = true; node.receiveShadow = true; colliders.push(node); }}); return tunnelGroup; } 
+    const tunnel1 = createTunnelStructure(); tunnel1.position.z = -wallOffset - (tunnelDepth / 2) + (wallThickness / 2); scene.add(tunnel1);
+    const tunnel2 = createTunnelStructure(); tunnel2.rotation.y = Math.PI; tunnel2.position.z = wallOffset + (tunnelDepth / 2) - (wallThickness / 2); scene.add(tunnel2);
+    
+    function createPlayerBase(ownerId) { 
+        const baseGroup = new THREE.Group(); 
+        baseGroup.userData = { ownerId: ownerId, pads: [], collectionPads: [], laserActive: false };
+        const materials = { baseFloorGrey: new THREE.MeshLambertMaterial({ color: 0x808080 }), walkwayRed: new THREE.MeshLambertMaterial({ color: 0xDC143C }), wallGrey: new THREE.MeshLambertMaterial({ color: 0x959595 }), padGreen: new THREE.MeshLambertMaterial({ color: 0x32CD32 }), padGrey: new THREE.MeshLambertMaterial({ color: 0xA9A9A9 }), circleYellow: new THREE.MeshLambertMaterial({ color: 0xFFFF00 }), blockerRed: new THREE.MeshLambertMaterial({ color: 0xFF0000 }), frameWhite: new THREE.MeshLambertMaterial({ color: 0xFFFFFF }), glass: new THREE.MeshBasicMaterial({ color: 0xaaccff, opacity: 0.3, transparent: true, side: THREE.DoubleSide }), }; 
+        const baseWidth = 24; const baseDepth = 30; const wallHeight = 10; 
+        const baseFloor = new THREE.Mesh(new THREE.BoxGeometry(baseWidth, 0.2, baseDepth), materials.baseFloorGrey); baseFloor.position.y = 0.1; baseGroup.add(baseFloor); 
+        const walkway = new THREE.Mesh(new THREE.BoxGeometry(8, 0.2, baseDepth), materials.walkwayRed); walkway.position.y = 0.2; baseGroup.add(walkway); 
+        const yellowCircle = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 0.1, 32), materials.circleYellow); yellowCircle.position.set(0, 0.35, 8); baseGroup.add(yellowCircle); laserTriggers.push(yellowCircle);
+        const backWall = new THREE.Mesh(new THREE.BoxGeometry(baseWidth, wallHeight, 1), materials.wallGrey); backWall.position.set(0, wallHeight/2, baseDepth/2); backWall.userData.isWall = true; baseGroup.add(backWall); 
+        const doorWidth = 10; const sideWallWidth = (baseWidth - doorWidth) / 2; 
+        const frontWallLeft = new THREE.Mesh(new THREE.BoxGeometry(sideWallWidth, wallHeight, 1), materials.wallGrey); frontWallLeft.position.set(-baseWidth/2 + sideWallWidth/2, wallHeight/2, -baseDepth/2); frontWallLeft.userData.isWall = true; baseGroup.add(frontWallLeft); 
+        const frontWallRight = new THREE.Mesh(new THREE.BoxGeometry(sideWallWidth, wallHeight, 1), materials.wallGrey); frontWallRight.position.set(baseWidth/2 - sideWallWidth/2, wallHeight/2, -baseDepth/2); frontWallRight.userData.isWall = true; baseGroup.add(frontWallRight); 
+        const frontWallTop = new THREE.Mesh(new THREE.BoxGeometry(doorWidth, 2, 1), materials.wallGrey); frontWallTop.position.set(0, wallHeight - 1, -baseDepth/2); frontWallTop.userData.isWall = true; baseGroup.add(frontWallTop); 
+        const door = new THREE.Mesh(new THREE.BoxGeometry(doorWidth, wallHeight - 2, 1)); door.position.set(0, (wallHeight - 2) / 2, -baseDepth / 2); door.visible = false; door.userData = { isDoor: true, ownerId: ownerId }; baseGroup.add(door); colliders.push(door);
+        function createSideWallWithWindow(posX) { const wallGroup = new THREE.Group(); const frameThickness = 0.5; const wallPartHeight = 2.0; const bottomWall = new THREE.Mesh(new THREE.BoxGeometry(1, wallPartHeight, baseDepth), materials.wallGrey); bottomWall.position.set(posX, wallPartHeight/2, 0); bottomWall.userData.isWall = true; wallGroup.add(bottomWall); const topWall = new THREE.Mesh(new THREE.BoxGeometry(1, wallPartHeight, baseDepth), materials.wallGrey); topWall.position.set(posX, wallHeight - wallPartHeight/2, 0); topWall.userData.isWall = true; wallGroup.add(topWall); const frameTop = new THREE.Mesh(new THREE.BoxGeometry(frameThickness, frameThickness, baseDepth), materials.frameWhite); frameTop.position.set(posX, wallHeight - wallPartHeight - frameThickness/2, 0); wallGroup.add(frameTop); const frameBottom = new THREE.Mesh(new THREE.BoxGeometry(frameThickness, frameThickness, baseDepth), materials.frameWhite); frameBottom.position.set(posX, wallPartHeight + frameThickness/2, 0); wallGroup.add(frameBottom); const glassHeight = wallHeight - (2 * wallPartHeight) - (2 * frameThickness); const glass = new THREE.Mesh(new THREE.BoxGeometry(0.2, glassHeight, baseDepth - 2), materials.glass); glass.position.set(posX, wallPartHeight + frameThickness + glassHeight/2, 0); wallGroup.add(glass); return wallGroup; } 
+        const sideWallLeft = createSideWallWithWindow(-baseWidth/2); baseGroup.add(sideWallLeft);
+        const sideWallRight = createSideWallWithWindow(baseWidth/2); baseGroup.add(sideWallRight);
+        const ceiling = new THREE.Mesh(new THREE.BoxGeometry(baseWidth, 1, baseDepth), materials.wallGrey); ceiling.position.set(0, wallHeight, 0); ceiling.userData.isWall = true; baseGroup.add(ceiling); 
+        const padDepth = 4; const padWidthGreen = 2.5; const padWidthGrey = 3.5; const padSpacingZ = 7; const startZ = -baseDepth / 2 + 6;
+        for (let i = 0; i < 4; i++) {
+            const currentZ = startZ + i * padSpacingZ;
+            const greenPadLeft = new THREE.Mesh(new THREE.BoxGeometry(padWidthGreen, 0.1, padDepth), materials.padGreen); greenPadLeft.position.set(-6, 0.35, currentZ); baseGroup.add(greenPadLeft); baseGroup.userData.collectionPads.push(greenPadLeft);
+            const greyPadLeft = new THREE.Mesh(new THREE.BoxGeometry(padWidthGrey, 0.1, padDepth - 1), materials.padGrey); greyPadLeft.position.set(-10, 0.35, currentZ); greyPadLeft.userData = { isPad: true, isOccupied: false }; baseGroup.add(greyPadLeft); baseGroup.userData.pads.push(greyPadLeft);
+            const greenPadRight = new THREE.Mesh(new THREE.BoxGeometry(padWidthGreen, 0.1, padDepth), materials.padGreen); greenPadRight.position.set(6, 0.35, currentZ); baseGroup.add(greenPadRight); baseGroup.userData.collectionPads.push(greenPadRight);
+            const greyPadRight = new THREE.Mesh(new THREE.BoxGeometry(padWidthGrey, 0.1, padDepth - 1), materials.padGrey); greyPadRight.position.set(10, 0.35, currentZ); greyPadRight.userData = { isPad: true, isOccupied: false }; baseGroup.add(greyPadRight); baseGroup.userData.pads.push(greyPadRight);
         }
-      });
-    });
+        baseGroup.traverse(function(node) { if (node.isMesh && node.userData.isWall) { node.castShadow = true; node.receiveShadow = true; colliders.push(node); } }); 
+        return baseGroup; 
+    }
+    
+    let baseIdCounter = 0; const basePositions = []; const baseSpacingZ = 45; const baseOffsetX = 35; 
+    for (let i = 0; i < 4; i++) { const zPos = -mapSize / 2.8 + i * baseSpacingZ; basePositions.push({pos: new THREE.Vector3(baseOffsetX, 0, zPos), rot: -Math.PI / 2 + Math.PI}); basePositions.push({pos: new THREE.Vector3(-baseOffsetX, 0, zPos), rot: Math.PI / 2 + Math.PI}); }
+    basePositions.forEach(data => { const base = createPlayerBase(baseIdCounter); base.position.copy(data.pos); base.rotation.y = data.rot; scene.add(base); allBases.push(base); if (baseIdCounter === MY_PLAYER_ID) { const labelDiv = document.createElement('div'); labelDiv.className = 'label'; labelDiv.style.fontSize = '24px'; labelDiv.innerHTML = `⬇️ Sua Base ⬇️`; const baseLabel = new CSS2DObject(labelDiv); baseLabel.position.set(0, 15, 0); base.add(baseLabel); const collectionDiv = document.createElement('div'); collectionDiv.className = 'label'; collectionDiv.style.fontSize = '20px'; collectionDiv.id = 'collection-label'; collectionDiv.textContent = '$0 para Coletar'; base.add(new CSS2DObject(collectionDiv)); } baseIdCounter++; });
+    
+    function createCharacter() { const character = new THREE.Group(); const materials = { skin: new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.8 }), torsoBlack: new THREE.MeshStandardMaterial({ color: 0x1e1e1e, roughness: 0.8 }), shirtBlue: new THREE.MeshStandardMaterial({ color: 0x00a2ff, roughness: 0.8 }), hair: new THREE.MeshStandardMaterial({ color: 0x964B00, roughness: 0.8 }), }; const head = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 0.8, 16), materials.skin); head.position.y = 2.4; character.add(head); const torso = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2, 0.8), materials.torsoBlack); torso.position.y = 1; character.add(torso); const shirtDesign = new THREE.Mesh(new THREE.BoxGeometry(1, 1.2, 0.1), materials.shirtBlue); shirtDesign.position.y = 1.2; shirtDesign.position.z = 0.41; character.add(shirtDesign); function createFaceTexture() { const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256; const ctx = canvas.getContext('2d'); ctx.fillStyle = '#cccccc'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.fillStyle = 'black'; ctx.fillRect(70, 80, 30, 30); ctx.fillRect(156, 80, 30, 30); ctx.beginPath(); ctx.arc(128, 160, 40, 0, Math.PI, false); ctx.lineWidth = 10; ctx.strokeStyle = 'black'; ctx.stroke(); return new THREE.CanvasTexture(canvas); } const facePlane = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.7), new THREE.MeshBasicMaterial({ map: createFaceTexture() })); facePlane.position.set(0, 2.4, 0.4); character.add(facePlane); const limbGeo = new THREE.BoxGeometry(0.6, 2, 0.7); const leftArm = new THREE.Mesh(limbGeo, materials.skin); leftArm.position.set(-1.05, 1, 0); character.add(leftArm); const rightArm = new THREE.Mesh(limbGeo, materials.skin); rightArm.position.set(1.05, 1, 0); character.add(rightArm); const leftLeg = new THREE.Mesh(limbGeo, materials.skin); leftLeg.position.set(-0.4, -1, 0); character.add(leftLeg); const rightLeg = new THREE.Mesh(limbGeo, materials.skin); rightLeg.position.set(0.4, -1, 0); character.add(rightLeg); const hairGroup = new THREE.Group(); hairGroup.position.y = 2.8; character.add(hairGroup); const hairPart1 = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.4, 1.5), materials.hair); hairGroup.add(hairPart1); const hairPart2 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 1.6), materials.hair); hairPart2.position.set(-0.4, 0.2, 0); hairPart2.rotation.z = Math.PI / 8; hairGroup.add(hairPart2); const hairPart3 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 1.6), materials.hair); hairPart3.position.set(0.4, 0.2, 0); hairPart3.rotation.z = -Math.PI / 8; hairGroup.add(hairPart3); const hairPart4 = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.4, 0.5), materials.hair); hairPart4.position.set(0, 0.3, -0.4); hairPart4.rotation.x = -Math.PI / 8; hairGroup.add(hairPart4);
+        character.userData.limbs = { leftArm, rightArm, leftLeg, rightLeg }; character.traverse(node => { if(node.isMesh) node.castShadow = true; });
+        const playerBase = allBases.find(b => b.userData.ownerId === MY_PLAYER_ID); const spawnPoint = new THREE.Vector3(0, playerHeight / 2, -20); spawnPoint.applyMatrix4(playerBase.matrixWorld); character.position.copy(spawnPoint);
+        scene.add(character); return character;
+    }
+    const player = createCharacter();
+    const playerCollider = new THREE.Box3(); 
+    
+    // --- Lógica da UI e Controles ---
+    const joystickContainer = document.getElementById('joystick-container');
+    const joystickHandle = document.getElementById('joystick-handle');
+    const jumpButton = document.getElementById('jump-button');
+    const buyButton = document.getElementById('buy-button');
+    const joystickRadius = joystickContainer.clientWidth / 2;  // <-- LINHA CORRIGIDA
+    function onJoystickMove(event) { event.preventDefault(); const touch = event.touches[0]; const rect = joystickContainer.getBoundingClientRect(); const x = touch.clientX - rect.left - joystickRadius; const y = touch.clientY - rect.top - joystickRadius; const distance = Math.sqrt(x*x + y*y); const clampedX = x / distance * Math.min(distance, joystickRadius - 30); const clampedY = y / distance * Math.min(distance, joystickRadius - 30); joystickHandle.style.transform = `translate(${clampedX}px, ${clampedY}px)`; moveDirection.set(clampedX / (joystickRadius - 30), -clampedY / (joystickRadius - 30)).normalize(); }
+    function onJoystickEnd(event) { joystickHandle.style.transform = `translate(0px, 0px)`; moveDirection.set(0, 0); document.removeEventListener('touchmove', onJoystickMove); document.removeEventListener('touchend', onJoystickEnd); }
+    joystickContainer.addEventListener('touchstart', (event) => { document.addEventListener('touchmove', onJoystickMove, { passive: false }); document.addEventListener('touchend', onJoystickEnd); }, { passive: false });
+    jumpButton.addEventListener('click', () => { if (onGround) { playerVelocity.y = jumpHeight; onGround = false; } });
+    buyButton.addEventListener('click', () => { if(targetBrainrot && playerMoney >= targetBrainrot.userData.price) { playerMoney -= targetBrainrot.userData.price; updateMoneyDisplay(); const playerBase = allBases.find(b => b.userData.ownerId === MY_PLAYER_ID); const targetPad = playerBase.userData.pads.find(p => !p.userData.isOccupied); if(targetPad) { targetPad.userData.isOccupied = true; const targetWorldPos = new THREE.Vector3(); targetPad.getWorldPosition(targetWorldPos); targetBrainrot.userData.state = 'movingToPad'; targetBrainrot.userData.destination = targetWorldPos; targetBrainrot.userData.ownerId = MY_PLAYER_ID; targetBrainrot.children.find(c => c.isCSS2DObject).element.style.display = 'none'; totalGenerationPerSecond += targetBrainrot.userData.generation; updateMoneyDisplay(); } else { console.log("Sem pads disponíveis!"); playerMoney += targetBrainrot.userData.price; updateMoneyDisplay(); } targetBrainrot = null; buyButton.style.display = 'none'; } });
 
-    // Loop principal
-    const moveSpeed = 0.15;
-    camera.position.set(0, 12, 20);
-    camera.lookAt(0, 0, 0);
+    // --- Lógica dos Menus ADM ---
+    const menuButton = document.getElementById('menu-button'); const adminMenu = document.getElementById('admin-menu');
+    const loginPanel = document.getElementById('login-panel'); const banPanel = document.getElementById('ban-panel');
+    menuButton.addEventListener('click', () => { adminMenu.style.display = adminMenu.style.display === 'block' ? 'none' : 'block'; });
+    document.getElementById('menu-login-btn').addEventListener('click', () => { loginPanel.style.display = 'block'; adminMenu.style.display = 'none'; });
+    document.querySelectorAll('.close-btn').forEach(btn => btn.addEventListener('click', (e) => e.target.parentElement.style.display = 'none'));
+    document.getElementById('admin-login-btn').addEventListener('click', () => { const user = document.getElementById('admin-user').value; const pass = document.getElementById('admin-pass').value; const errorDiv = document.getElementById('login-error'); if (user === 'ADM' && pass === '093106Rm#') { isAdmin = true; document.querySelectorAll('#admin-menu button').forEach(b => b.disabled = false); console.log("Login de ADM realizado!"); loginPanel.style.display = 'none'; errorDiv.textContent = ''; } else { errorDiv.textContent = 'Usuário ou senha inválidos.'; } });
+    document.getElementById('menu-event-btn').addEventListener('click', () => { toggleGalaxyEvent(); adminMenu.style.display = 'none'; });
+    document.getElementById('menu-money-btn').addEventListener('click', () => { const amount = parseInt(prompt("Qual quantia de dinheiro você quer adicionar?")); if(!isNaN(amount)) { playerMoney += amount; updateMoneyDisplay(); } adminMenu.style.display = 'none'; });
+    document.getElementById('menu-ban-btn').addEventListener('click', () => { banPanel.style.display = 'block'; adminMenu.style.display = 'none'; });
+    document.getElementById('ban-confirm-btn').addEventListener('click', () => { const user = document.getElementById('ban-user').value; const reason = document.getElementById('ban-reason').value; if(user && reason) { alert(`ADM baniu ${user}. Motivo: ${reason}`); banPanel.style.display = 'none'; } });
 
+    // --- Lógica do Jogo ---
+    function createGalaxy() { const vertices = []; for (let i = 0; i < 10000; i++) { const x = THREE.MathUtils.randFloatSpread(2000); const y = THREE.MathUtils.randFloatSpread(2000); const z = THREE.MathUtils.randFloatSpread(2000); vertices.push(x, y, z); } const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3)); const material = new THREE.PointsMaterial({ color: 0xffffff, size: 1.5 }); stars = new THREE.Points(geometry, material); stars.visible = false; scene.add(stars); }
+    function toggleGalaxyEvent() { isGalaxyEventActive = !isGalaxyEventActive; stars.visible = isGalaxyEventActive; scene.background.set(isGalaxyEventActive ? 0x1a0035 : originalSkyColor); ground.material.color.set(isGalaxyEventActive ? 0x87CEFA : 0x228B22); document.getElementById('menu-event-btn').textContent = isGalaxyEventActive ? 'Parar Evento' : 'Evento Galaxy'; }
+
+    let animationTime = 0;
+    setInterval(spawnBrainrot, 5000); 
+    setInterval(() => { let totalToCollect = 0; for (const brainrot of activeBrainrots) { if(brainrot.userData.state === 'generating' && brainrot.userData.ownerId === MY_PLAYER_ID) { brainrot.userData.accumulatedMoney += brainrot.userData.generation; } if(brainrot.userData.ownerId === MY_PLAYER_ID) { totalToCollect += brainrot.userData.accumulatedMoney; } } const collectionLabel = document.getElementById('collection-label'); if(collectionLabel) collectionLabel.textContent = `$${Math.floor(totalToCollect)} para Coletar`; }, 1000);
+
+    createGalaxy();
     function animate() {
-      requestAnimationFrame(animate);
+        const delta = clock.getDelta();
+        requestAnimationFrame(animate);
 
-      if (myId && players[myId]) {
-        const pos = players[myId].mesh.position;
-
-        // Pulo
-        if (jumpPressed && !isJumping && pos.y <= 1.1) {
-          isJumping = true;
-          jumpVelocity = jumpStrength;
+        let closestBrainrot = null; let minDistance = 6; 
+        for (let i = activeBrainrots.length - 1; i >= 0; i--) { 
+            const brainrot = activeBrainrots[i]; 
+            if (brainrot.userData.state === 'onConveyor') { brainrot.position.z += 3 * delta; const distanceToPlayer = player.position.distanceTo(brainrot.position); if (distanceToPlayer < minDistance) { minDistance = distanceToPlayer; closestBrainrot = brainrot; } if (brainrot.position.z > mapSize / 2) { brainrot.children.find(c => c.isCSS2DObject).element.remove(); scene.remove(brainrot); activeBrainrots.splice(i, 1); } 
+            } else if (brainrot.userData.state === 'movingToPad') {
+                const dest = brainrot.userData.destination;
+                if(brainrot.position.distanceTo(dest) > 0.1) { brainrot.position.lerp(dest, delta * 2.0); } 
+                else { brainrot.position.copy(dest); brainrot.userData.state = 'generating'; }
+            }
         }
+        targetBrainrot = closestBrainrot;
+        if (targetBrainrot) { buyButton.style.display = 'block'; const screenPosition = targetBrainrot.position.clone().project(camera); buyButton.style.left = `${(screenPosition.x + 1) / 2 * window.innerWidth - buyButton.offsetWidth / 2}px`; buyButton.style.top = `${(-screenPosition.y + 1) / 2 * window.innerHeight - buyButton.offsetHeight - 20}px`; } else { buyButton.style.display = 'none'; }
 
-        if (isJumping) {
-          pos.y += jumpVelocity;
-          jumpVelocity -= gravity;
-          if (pos.y <= 1) {
-            pos.y = 1;
-            isJumping = false;
-            jumpVelocity = 0;
-          }
+        playerCollider.setFromCenterAndSize(player.position, playerSize);
+        for(const trigger of laserTriggers) { const base = trigger.parent; if(base.userData.ownerId === MY_PLAYER_ID) { const triggerBox = new THREE.Box3().setFromObject(trigger); if(playerCollider.intersectsBox(triggerBox)) { activateLaser(base); } } }
+        
+        const playerBase = allBases.find(b => b.userData.ownerId === MY_PLAYER_ID);
+        for(const pad of playerBase.userData.collectionPads) {
+            const padBox = new THREE.Box3().setFromObject(pad);
+            if(playerCollider.intersectsBox(padBox)) {
+                let collectedAmount = 0;
+                for (const brainrot of activeBrainrots) {
+                    if(brainrot.userData.ownerId === MY_PLAYER_ID && brainrot.userData.accumulatedMoney > 0) {
+                        collectedAmount += brainrot.userData.accumulatedMoney;
+                        brainrot.userData.accumulatedMoney = 0;
+                    }
+                }
+                if (collectedAmount > 0) {
+                    playerMoney += collectedAmount;
+                    updateMoneyDisplay();
+                }
+            }
         }
+        
+        const cameraDirection = new THREE.Vector3(); camera.getWorldDirection(cameraDirection); cameraDirection.y = 0; cameraDirection.normalize();
+        const cameraRight = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), cameraDirection).normalize();
+        const moveVector = cameraDirection.multiplyScalar(moveDirection.y).add(cameraRight.multiplyScalar(-moveDirection.x));
+        
+        if (!onGround) { playerVelocity.y -= gravity * delta; }
+        player.position.x += moveVector.x * playerSpeed * delta;
+        player.position.y += playerVelocity.y * delta;
+        player.position.z += moveVector.z * playerSpeed * delta;
+        checkCollisions(); 
 
-        // Frente
-        if (moveForward) {
-          pos.z -= moveSpeed;
-        }
+        if (player.position.y < playerHeight / 2) { player.position.y = playerHeight / 2; playerVelocity.y = 0; onGround = true; }
+        
+        if (moveDirection.length() > 0.1) { player.rotation.y = Math.atan2(moveVector.x, moveVector.z); animationTime += delta * 10; }
+        const walkAmplitude = 0.6; const { leftArm, rightArm, leftLeg, rightLeg } = player.userData.limbs;
+        if (moveDirection.length() > 0.1) { leftArm.rotation.x = Math.sin(animationTime) * walkAmplitude; rightArm.rotation.x = -Math.sin(animationTime) * walkAmplitude; leftLeg.rotation.x = -Math.sin(animationTime) * walkAmplitude; rightLeg.rotation.x = Math.sin(animationTime) * walkAmplitude; } else { leftArm.rotation.x = THREE.MathUtils.lerp(leftArm.rotation.x, 0, delta * 10); rightArm.rotation.x = THREE.MathUtils.lerp(rightArm.rotation.x, 0, delta * 10); leftLeg.rotation.x = THREE.MathUtils.lerp(leftLeg.rotation.x, 0, delta * 10); rightLeg.rotation.x = THREE.MathUtils.lerp(rightLeg.rotation.x, 0, delta * 10); }
 
-        // Limites da arena
-        pos.x = Math.max(-95, Math.min(95, pos.x));
-        pos.z = Math.max(-95, Math.min(95, pos.z));
+        controls.target.lerp(player.position, delta * 5.0);
+        controls.update();
 
-        // Enviar posição
-        socket.emit('move', { x: pos.x, y: pos.y, z: pos.z });
-      }
-
-      renderer.render(scene, camera);
+        renderer.render(scene, camera);
+        labelRenderer.render(scene, camera);
     }
-    animate();
+    
+    // --- FUNÇÃO DE COLISÃO ATUALIZADA ---
+    function checkCollisions() {
+        playerCollider.setFromCenterAndSize(player.position, playerSize);
+        for (const collider of colliders) {
+            const colliderBox = new THREE.Box3().setFromObject(collider);
+            
+            if(collider.userData.isDoor && collider.userData.ownerId === MY_PLAYER_ID) continue; 
+            if(collider.userData.isLaser && collider.userData.ownerId === MY_PLAYER_ID) continue;
 
-    // Ajuste de tela
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-  </script>
+            if (playerCollider.intersectsBox(colliderBox)) {
+                const intersection = new THREE.Box3();
+                intersection.copy(playerCollider).intersect(colliderBox);
+
+                const penetration = new THREE.Vector3();
+                intersection.getSize(penetration);
+
+                const playerCenter = new THREE.Vector3(); playerCollider.getCenter(playerCenter);
+                const colliderCenter = new THREE.Vector3(); colliderBox.getCenter(colliderCenter);
+                const direction = new THREE.Vector3().subVectors(playerCentercolliderCenter);
+
+                if (penetration.x < penetration.y && penetration.x < penetration.z) {
+                    player.position.x += (direction.x > 0 ? 1 : -1) * penetration.x;
+                } else if (penetration.y < penetration.x && penetration.y < penetration.z) {
+                    // Impede de grudar no chão/teto
+                    playerVelocity.y = 0;
+                    player.position.y += (direction.y > 0 ? 1 : -1) * penetration.y;
+                } else {
+                    player.position.z += (direction.z > 0 ? 1 : -1) * penetration.z;
+                }
+            }
+        }
+    }
+    
+    function activateLaser(baseGroup) {
+        if(baseGroup.userData.laserActive) return;
+        baseGroup.userData.laserActive = true;
+        const doorWidth = 10; const doorHeight = 8;
+        const laserMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.5, side: THREE.DoubleSide });
+        const laserColliderMesh = new THREE.Mesh(new THREE.BoxGeometry(doorWidth, doorHeight, 0.5), laserMaterial);
+        laserColliderMesh.position.set(0, (wallHeight - 2) / 2, -15);
+        laserColliderMesh.userData = { isLaser: true, ownerId: baseGroup.userData.ownerId };
+        baseGroup.add(laserColliderMesh);
+        colliders.push(laserColliderMesh);
+        setTimeout(() => {
+            baseGroup.remove(laserColliderMesh);
+            const index = colliders.indexOf(laserColliderMesh);
+            if (index > -1) colliders.splice(index, 1);
+            baseGroup.userData.laserActive = false;
+        }, 60000);
+    }
+
+    animate();
+    window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); labelRenderer.setSize(window.innerWidth, window.innerHeight); });
+</script>
 </body>
 </html>
