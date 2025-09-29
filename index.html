@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Brainrot Tycoon - V0.4.2 (Movimento Corrigido)</title>
+    <title>Brainrot Tycoon - V0.4.6 (Eventos, Efeitos ADM, Evento Brasil e Correções)</title>
     <style>
         body { margin: 0; overflow: hidden; font-family: 'Arial', sans-serif; }
         canvas { display: block; }
@@ -21,9 +21,16 @@
         
         #money-display { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); padding: 10px 20px; background-color: rgba(0, 0, 0, 0.5); color: white; border-radius: 10px; font-size: 24px; font-weight: bold; border: 2px solid rgba(255,255,255,0.7); }
         #money-display #generation-rate { color: #8cff78; font-size: 18px; margin-left: 10px; }
+        #robux-display { position: absolute; top: 60px; left: 50%; transform: translateX(-50%); padding: 10px 20px; background-color: rgba(0, 0, 0, 0.5); color: #FFD700; border-radius: 10px; font-size: 24px; font-weight: bold; border: 2px solid rgba(255,215,0,0.7); }
+        #effects-display { position: absolute; top: 100px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; }
+        .effect-icon { font-size: 24px; animation: pulseEffect 1s infinite alternate; }
+        @keyframes pulseEffect {
+            from { transform: scale(1); }
+            to { transform: scale(1.2); }
+        }
         #buy-button { position: absolute; display: none; padding: 15px 25px; font-size: 18px; font-weight: bold; color: white; background-color: #28a745; border: 2px solid #218838; border-radius: 10px; cursor: pointer; pointer-events: auto; z-index: 10; }
 
-        .modal-panel { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(30, 30, 30, 0.9); border: 2px solid #555; border-radius: 15px; padding: 25px; z-index: 100; pointer-events: auto; color: white; width: 300px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .modal-panel { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(30, 30, 30, 0.9); border: 2px solid #555; border-radius: 15px; padding: 25px; z-index: 100; pointer-events: auto; color: white; width: 400px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
         .modal-panel h2 { text-align: center; margin-top: 0; }
         .modal-panel input { width: calc(100% - 20px); padding: 10px; margin-bottom: 15px; border-radius: 5px; border: 1px solid #444; background-color: #333; color: white; }
         .modal-panel button { width: 100%; padding: 12px; border-radius: 5px; border: none; background-color: #007bff; color: white; font-size: 16px; cursor: pointer; }
@@ -32,9 +39,114 @@
 
         #menu-button { position: absolute; top: 20px; left: 20px; width: 50px; height: 50px; background-color: rgba(0,0,0,0.5); border-radius: 10px; pointer-events: auto; cursor: pointer; z-index: 50; border: 2px solid white; }
         #menu-button .bar { width: 30px; height: 4px; background-color: white; margin: 6px auto; }
-        #admin-menu { display: none; position: absolute; top: 80px; left: 20px; background-color: rgba(30,30,30,0.9); border-radius: 10px; padding: 10px; pointer-events: auto; z-index: 50; }
-        #admin-menu button { display: block; width: 180px; padding: 10px; margin: 5px 0; background-color: #444; color: white; border: 1px solid #666; border-radius: 5px; text-align: left; }
+        #admin-menu { display: none; position: absolute; top: 80px; left: 20px; background-color: rgba(30,30,30,0.9); border-radius: 10px; padding: 10px; pointer-events: auto; z-index: 50; width: 200px; }
+        #admin-menu button { display: block; width: 100%; padding: 10px; margin: 5px 0; background-color: #444; color: white; border: 1px solid #666; border-radius: 5px; text-align: left; }
         #admin-menu button:disabled { color: #888; background-color: #333; }
+
+        /* --- Estilo da Loja --- */
+        #shop-panel { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(50, 50, 50, 0.95); border: 2px solid #555; border-radius: 15px; padding: 25px; z-index: 100; pointer-events: auto; color: white; width: 400px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        #shop-panel h2 { text-align: center; margin-top: 0; color: #FFD700; }
+        .shop-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #444; }
+        .shop-item:last-child { border-bottom: none; }
+        .shop-item-name { font-weight: bold; }
+        .shop-item-price { color: #FFD700; }
+        .shop-item-buy-btn { padding: 8px 15px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .shop-item-buy-btn:disabled { background-color: #6c757d; cursor: not-allowed; }
+
+        /* --- Estilo do Lucky Block --- */
+        .lucky-block { position: absolute; display: none; padding: 15px 25px; font-size: 18px; font-weight: bold; color: white; background-color: #8B4513; border: 2px solid #A0522D; border-radius: 10px; cursor: pointer; pointer-events: auto; z-index: 10; }
+
+        /* --- Estilo dos Indicadores de Evento --- */
+        .event-indicator {
+            position: fixed;
+            font-size: 30px;
+            z-index: 200;
+            display: none;
+            animation: pulse 2s infinite;
+        }
+        #taco-event-indicator { bottom: 20px; right: 20px; }
+        #galaxy-event-indicator { bottom: 60px; right: 20px; }
+        #brasil-event-indicator { bottom: 100px; right: 20px; }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        /* --- Estilo dos Emojis 🌮 Caindo --- */
+        .falling-taco {
+            position: fixed;
+            top: -50px;
+            font-size: 30px;
+            z-index: 100;
+            pointer-events: none;
+            animation: fall linear forwards;
+        }
+        @keyframes fall {
+            to {
+                transform: translateY(100vh);
+            }
+        }
+
+        /* --- Estilo do Overlay da Lucky Block --- */
+        #lucky-block-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 300;
+        }
+        #lucky-block-result {
+            font-size: 100px;
+            color: #FFD700;
+            animation: spin 2s ease-out forwards;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg) scale(0.5); opacity: 0; }
+            20% { opacity: 1; }
+            100% { transform: rotate(360deg) scale(1); opacity: 1; }
+        }
+
+        /* --- Estilo do Painel ADM (Nova aba) --- */
+        #admin-panel { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(30, 30, 30, 0.95); border: 2px solid #555; border-radius: 15px; padding: 25px; z-index: 200; pointer-events: auto; color: white; width: 500px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        #admin-panel h2 { text-align: center; margin-top: 0; }
+        .admin-tab { display: none; }
+        .admin-tab.active { display: block; }
+        .admin-tab-buttons { display: flex; justify-content: space-between; margin-bottom: 15px; }
+        .admin-tab-button { flex: 1; padding: 10px; background-color: #444; color: white; border: 1px solid #666; border-radius: 5px 5px 0 0; cursor: pointer; text-align: center; }
+        .admin-tab-button.active { background-color: #555; border-bottom: 2px solid #007bff; }
+
+        /* --- Estilo da Animação do Evento Brasil --- */
+        #brasil-animation-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: black;
+            display: none; /* Inicialmente oculto */
+            z-index: 400;
+        }
+        #brasil-animation-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 60px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00, 0 0 30px #00ff00;
+            animation: flash 1s infinite alternate;
+        }
+        @keyframes flash {
+            from { opacity: 0.5; }
+            to { opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -43,25 +155,111 @@
         <div id="joystick-container"><div id="joystick-handle"></div></div>
         <button id="jump-button">Pular</button>
         <div id="money-display">$100 <span id="generation-rate">+$0/s</span></div>
+        <div id="robux-display">Robux: 10</div>
+        <div id="effects-display"></div>
         <div id="menu-button"> <div class="bar"></div> <div class="bar"></div> <div class="bar"></div> </div>
         <div id="admin-menu">
             <button id="menu-login-btn">Fazer Login ADM</button>
-            <button id="menu-event-btn" disabled>Evento Galaxy</button>
-            <button id="menu-money-btn" disabled>Dar Dinheiro</button>
+            <button id="menu-open-admin-panel-btn" disabled>Abrir Painel ADM</button> <!-- Novo botão -->
+            <button id="menu-event-btn">Ativar Eventos</button> <!-- Agora abre o painel -->
             <button id="menu-ban-btn" disabled>Banir Jogador</button>
         </div>
     </div>
     <button id="buy-button">Comprar</button>
+    <button id="shop-button">Loja</button>
+
+    <!-- Indicadores de Evento -->
+    <div id="taco-event-indicator" class="event-indicator">🌮</div>
+    <div id="galaxy-event-indicator" class="event-indicator">🌌</div>
+    <div id="brasil-event-indicator" class="event-indicator">🇧🇷</div> <!-- Novo indicador -->
+
+    <!-- Overlay da Lucky Block -->
+    <div id="lucky-block-overlay">
+        <div id="lucky-block-result">?</div>
+    </div>
+
+    <!-- Lucky Block -->
+    <button id="lucky-block-btn" class="lucky-block">Abrir</button>
+
+    <!-- Painel ADM -->
+    <div id="admin-panel" class="modal-panel">
+        <span class="close-btn">&times;</span>
+        <h2>Painel ADM</h2>
+        <div class="admin-tab-buttons">
+            <button class="admin-tab-button active" data-tab="spawn">Spawnar</button>
+            <button class="admin-tab-button" data-tab="effects">Efeitos</button>
+            <button class="admin-tab-button" data-tab="events">Eventos</button>
+        </div>
+
+        <div id="admin-tab-spawn" class="admin-tab active">
+            <h3>Spawnar Brainrot</h3>
+            <input type="text" id="spawn-name-input" placeholder="Nome do Brainrot">
+            <button id="spawn-brainrot-confirm-btn">Spawnar</button>
+            <p>Exemplos: Skibidi, Taco God, The Original Taco, Samba King</p>
+        </div>
+
+        <div id="admin-tab-effects" class="admin-tab">
+            <h3>Adicionar Efeitos</h3>
+            <label for="add-money-input">Dinheiro:</label>
+            <input type="number" id="add-money-input" value="100" min="0">
+            <button id="add-money-btn">Adicionar</button>
+
+            <label for="add-robux-input">Robux:</label>
+            <input type="number" id="add-robux-input" value="10" min="0">
+            <button id="add-robux-btn">Adicionar</button>
+
+            <label for="add-luck-input">Sorte (Multiplicador):</label>
+            <input type="number" id="add-luck-input" value="2" min="0" step="0.1">
+            <label for="add-luck-duration">Duração (segundos):</label>
+            <input type="number" id="add-luck-duration" value="120" min="1">
+            <button id="add-luck-btn">Aplicar Sorte</button>
+        </div>
+
+        <div id="admin-tab-events" class="admin-tab">
+            <h3>Ativar Eventos</h3>
+            <label for="event-duration-galaxy">Duração Galaxy (segundos):</label>
+            <input type="number" id="event-duration-galaxy" value="30" min="1">
+            <button id="activate-galaxy-btn">Ativar Galaxy</button>
+
+            <label for="event-duration-taco">Duração Taco (segundos):</label>
+            <input type="number" id="event-duration-taco" value="45" min="1">
+            <button id="activate-taco-btn">Ativar Taco</button>
+
+            <label for="event-duration-brasil">Duração Brasil (segundos):</label>
+            <input type="number" id="event-duration-brasil" value="120" min="1">
+            <button id="activate-brasil-btn">Ativar Brasil</button>
+        </div>
+    </div>
+
+    <!-- Overlay da Animação do Evento Brasil -->
+    <div id="brasil-animation-overlay">
+        <div id="brasil-animation-text">Evento Brasil!</div>
+    </div>
 
     <div id="login-panel" class="modal-panel">
         <span class="close-btn">&times;</span> <h2>Painel ADM</h2> <input type="text" id="admin-user" placeholder="Usuário"> <input type="password" id="admin-pass" placeholder="Senha"> <div id="login-error" class="error-message"></div> <button id="admin-login-btn">Login</button>
     </div>
+
+    <div id="shop-panel" class="modal-panel">
+        <span class="close-btn">&times;</span> <h2>Loja de Robux</h2>
+        <div id="shop-items">
+            <!-- Itens da loja serão adicionados aqui via JS -->
+        </div>
+    </div>
+
     <div id="ban-panel" class="modal-panel">
         <span class="close-btn">&times;</span> <h2>Banir Jogador</h2> <input type="text" id="ban-user" placeholder="Nome do Jogador"> <input type="text" id="ban-reason" placeholder="Motivo"> <div id="ban-error" class="error-message"></div> <button id="ban-confirm-btn">Banir</button>
     </div>
 
+    <!-- Elemento de Áudio -->
+    <audio id="taco-event-audio" preload="auto">
+        <source src="https://raw.githubusercontent.com/matheussixto26-art/Taco/main/ITS%20RAINING%20TACOS_%20 (Roblox%20Music%20Video)(M4A_128K).m4a" type="audio/m4a">
+        <source src="taco_event_music.mp3" type="audio/mpeg"> <!-- Substitua por um arquivo .mp3 local -->
+        Seu navegador não suporta o elemento de áudio.
+    </audio>
+
 <script type="importmap">
-    { "imports": { "three": "https://unpkg.com/three@0.164.1/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.164.1/examples/jsm/" } }
+    { "imports": { "three": "https://unpkg.com/three@0.164.1/build/three.module.js ", "three/addons/": "https://unpkg.com/three@0.164.1/examples/jsm/ " } }
 </script>
 
 <script type="module">
@@ -93,62 +291,234 @@
 
     // --- Variáveis Globais ---
     const clock = new THREE.Clock(); const colliders = []; const laserTriggers = []; const activeBrainrots = []; const allBases = []; let stars; let isGalaxyEventActive = false;
-    const MY_PLAYER_ID = 0; let playerMoney = 100; let totalGenerationPerSecond = 0; let targetBrainrot = null; let isAdmin = false;
+    const MY_PLAYER_ID = 0; let playerMoney = 100; let playerRobux = 10;
+    let totalGenerationPerSecond = 0; let targetBrainrot = null; let isAdmin = false;
+    let playerLuck = 1.0;
+
     const playerSpeed = 8.0; const playerHeight = 3.5; const jumpHeight = 10.0; const gravity = 25.0; let playerVelocity = new THREE.Vector3(); let onGround = false; const moveDirection = new THREE.Vector2(); const playerSize = new THREE.Vector3(1.5, playerHeight, 0.8);
     const moneyDisplay = document.getElementById('money-display');
     const generationRateSpan = document.getElementById('generation-rate');
+    const robuxDisplay = document.getElementById('robux-display');
+    const effectsDisplay = document.getElementById('effects-display');
+
+    // --- Variáveis Globais para Eventos ---
+    let activeEvents = new Set(); // Agora é um Set para múltiplos eventos
+    let eventTimers = new Map(); // Armazena os timeouts de cada evento
+    let eventGenerationMultipliers = new Map(); // Armazena o multiplicador de cada evento
+    let tacoMeshes = [];
+    let tacoInterval = null;
+    let originalGroundColor = new THREE.Color();
+    let originalGroundMaterial = null;
+    let cannonObject = null;
+    let fallingTacoInterval = null;
+    const tacoEventIndicator = document.getElementById('taco-event-indicator');
+    const galaxyEventIndicator = document.getElementById('galaxy-event-indicator');
+    const brasilEventIndicator = document.getElementById('brasil-event-indicator'); // Novo indicador
+    const tacoAudio = document.getElementById('taco-event-audio');
+    let currentLuckTimeout = null;
+
+    // --- Variáveis Globais para Efeitos Ativos ---
+    const activeEffects = new Map();
+
+    // --- Variáveis Globais para o Evento Brasil ---
+    let brasilBase = null; // Referência à base especial do evento Brasil
+    let brasilCharacter = null; // Referência ao personagem gigante
+    let brasilAnimationInterval = null; // Intervalo para as luzes coloridas
+    const brasilAnimationOverlay = document.getElementById('brasil-animation-overlay');
+    const brasilAnimationText = document.getElementById('brasil-animation-text');
 
     function updateMoneyDisplay() {
         moneyDisplay.firstChild.textContent = `$${Math.floor(playerMoney)} `;
-        generationRateSpan.textContent = `+$${totalGenerationPerSecond}/s`;
+        // Calcula o multiplicador total de todos os eventos ativos
+        let totalEventMultiplier = 1;
+        for (const mult of eventGenerationMultipliers.values()) {
+            totalEventMultiplier *= mult;
+        }
+        generationRateSpan.textContent = `+$${totalGenerationPerSecond * totalEventMultiplier}/s`;
     }
 
-    // --- Lógica Brainrot ---
-    const BRAINROT_DATA = { Common: [ { name: 'Skibidi', price: 10, generation: 1, color: 0x8B4513 }, { name: 'Kai Cenat', price: 15, generation: 2, color: 0xADD8E6 }, { name: 'The Rizzler', price: 20, generation: 3, color: 0x90EE90 } ], Rare: [ { name: 'Baby Gronk', price: 50, generation: 10, color: 0xFFD700 }, { name: 'Sigma', price: 75, generation: 15, color: 0xC0C0C0 } ], Epic: [ { name: 'Giga Chad', price: 200, generation: 50, color: 0xFFC0CB } ] };
-    function spawnBrainrot() { const rand = Math.random(); let rarity; if (rand < 0.6) rarity = 'Common'; else if (rand < 0.9) rarity = 'Rare'; else rarity = 'Epic'; const types = BRAINROT_DATA[rarity]; const data = types[Math.floor(Math.random() * types.length)]; const geometry = new THREE.SphereGeometry(1, 32, 16); const material = new THREE.MeshStandardMaterial({ color: data.color }); const mesh = new THREE.Mesh(geometry, material); mesh.castShadow = true; mesh.position.set(0, 1, -mapSize / 2 + 5); mesh.userData = { ...data, ownerId: null, rarity: rarity, state: 'onConveyor', accumulatedMoney: 0, destination: null }; const textDiv = document.createElement('div'); textDiv.className = 'label'; textDiv.innerHTML = `${data.name}<br><span style="color: ${rarity === 'Common' ? '#FFF' : rarity === 'Rare' ? '#FFD700' : '#FF69B4'}">${rarity}</span><br>$${data.price}`; const textLabel = new CSS2DObject(textDiv); textLabel.position.y = 2.0; mesh.add(textLabel); scene.add(mesh); activeBrainrots.push(mesh); }
-    
+    function updateRobuxDisplay() {
+        robuxDisplay.textContent = `Robux: ${playerRobux}`;
+    }
+
+    function addEffectIcon(key, icon) {
+        if (activeEffects.has(key)) {
+            activeEffects.get(key).textContent = icon;
+        } else {
+            const iconElement = document.createElement('div');
+            iconElement.className = 'effect-icon';
+            iconElement.textContent = icon;
+            iconElement.id = `effect-${key}`;
+            effectsDisplay.appendChild(iconElement);
+            activeEffects.set(key, iconElement);
+        }
+    }
+
+    function removeEffectIcon(key) {
+        if (activeEffects.has(key)) {
+            const iconElement = activeEffects.get(key);
+            iconElement.remove();
+            activeEffects.delete(key);
+        }
+    }
+
+    // --- Definição das Raridades ---
+    const RARITY_DATA = {
+        Common: { name: 'Comum', color: '#FFF', weight: 100 },
+        Rare: { name: 'Raro', color: '#FFD700', weight: 20 },
+        Epic: { name: 'Épico', color: '#FF69B4', weight: 5 },
+        Legendary: { name: 'Lendário', color: '#8A2BE2', weight: 1.5 },
+        Mythic: { name: 'Mítico', color: '#00BFFF', weight: 0.3 },
+        God: { name: 'Deuses do Brainrot', color: '#FF4500', weight: 0.05 },
+        Secret: { name: 'Secret', color: '#32CD32', weight: 0.01 },
+        OG: { name: 'OG', color: '#FF1493', weight: 0.001 }
+    };
+
+    // --- Lógica Brainrot (Atualizada e Corrigida) ---
+    const BRAINROT_DATA = {
+        Common: [
+            { name: 'Skibidi', price: 10, generation: 1, color: 0x8B4513 },
+            { name: 'Kai Cenat', price: 15, generation: 2, color: 0xADD8E6 },
+            { name: 'The Rizzler', price: 20, generation: 3, color: 0x90EE90 }
+        ],
+        Rare: [
+            { name: 'Baby Gronk', price: 50, generation: 10, color: 0xFFD700 },
+            { name: 'Sigma', price: 75, generation: 15, color: 0xC0C0C0 }
+        ],
+        Epic: [
+            { name: 'Giga Chad', price: 200, generation: 50, color: 0xFFC0CB }
+        ],
+        Legendary: [
+            { name: 'Taco Master', price: 500, generation: 100, color: 0xFF8C00 },
+            { name: 'Galaxy Brain', price: 600, generation: 120, color: 0x4B0082 }
+        ],
+        Mythic: [
+            { name: 'Taco God', price: 1500, generation: 300, color: 0xFF4500 },
+            { name: 'Nebula Lord', price: 2000, generation: 400, color: 0x9370DB },
+            // Novos Brainrots Brasil - Mythic
+            { name: 'Christ the Redeemer', price: 8000, generation: 1800, color: 0xF5F5DC }, // Bege
+            { name: 'Tropical Storm', price: 12000, generation: 2200, color: 0x00CED1 }, // Turquesa
+            { name: 'Samba Dancer', price: 15000, generation: 2800, color: 0xFF6347 }, // Vermelho
+            { name: 'Capoeira Master', price: 18000, generation: 3200, color: 0xFF4500 }, // Laranja
+            { name: 'Brazilian Jiu-Jitsu', price: 22000, generation: 4000, color: 0x0000FF } // Azul
+        ],
+        God: [
+            { name: 'Taco Emperor', price: 5000, generation: 1000, color: 0x8B0000 },
+            { name: 'Cosmic Overlord', price: 10000, generation: 2000, color: 0x000080 },
+            // Novos Brainrots Brasil - God
+            { name: 'Samba King', price: 12000, generation: 2500, color: 0x006400 }, // Verde
+            { name: 'Carnaval Queen', price: 18000, generation: 3500, color: 0xFFD700 }, // Dourado
+            { name: 'Futebol Master', price: 25000, generation: 5000, color: 0x4169E1 }, // Azul
+            { name: 'Café Lord', price: 30000, generation: 6000, color: 0x8B4513 }, // Marrom
+            { name: 'Amazon Chief', price: 35000, generation: 7000, color: 0x32CD32 } // Verde
+        ],
+        Secret: [
+            { name: 'Taco Phantom', price: 10000, generation: 2500, color: 0x2F4F4F },
+            { name: 'Stellar Enigma', price: 15000, generation: 3000, color: 0x191970 },
+            // Novos Brainrots Brasil - Secret
+            { name: 'Selva Encantada', price: 25000, generation: 5500, color: 0x228B22 }, // Verde Floresta
+            { name: 'Praia Perdida', price: 30000, generation: 6500, color: 0xFFD700 } // Dourado
+        ],
+        OG: [
+            { name: 'The Original Taco', price: 50000, generation: 10000, color: 0xFF69B4 }
+        ]
+    };
+
+
+    // Função para escolher uma raridade com base na sorte
+    function getRandomRarity() {
+        const totalWeight = Object.values(RARITY_DATA).reduce((sum, rarity) => sum + rarity.weight, 0);
+        const luckModifiedTotalWeight = totalWeight / playerLuck;
+
+        let randomValue = Math.random() * luckModifiedTotalWeight;
+
+        for (const [rarityKey, rarityData] of Object.entries(RARITY_DATA)) {
+            randomValue -= rarityData.weight;
+            if (randomValue <= 0) {
+                return rarityKey;
+            }
+        }
+        return 'Common';
+    }
+
+    function spawnBrainrot() {
+        const rarity = getRandomRarity();
+        const types = BRAINROT_DATA[rarity];
+        if (!types || types.length === 0) {
+            console.error(`Nenhum brainrot definido para a raridade: ${rarity}`);
+            return;
+        }
+        const data = types[Math.floor(Math.random() * types.length)];
+        const geometry = new THREE.SphereGeometry(1, 32, 16);
+        const material = new THREE.MeshStandardMaterial({ color: data.color });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.castShadow = true;
+        mesh.position.set(0, 1, -mapSize / 2 + 5);
+        mesh.userData = { ...data, ownerId: null, rarity: rarity, state: 'onConveyor', accumulatedMoney: 0, destination: null, onTaco: false };
+
+        const textDiv = document.createElement('div');
+        textDiv.className = 'label';
+        textDiv.innerHTML = `${data.name}<br><span style="color: ${RARITY_DATA[rarity].color}">${RARITY_DATA[rarity].name}</span><br>$${data.price}<br>+${data.generation}/s`;
+        const textLabel = new CSS2DObject(textDiv);
+        textLabel.position.y = 2.0;
+        mesh.add(textLabel);
+
+        scene.add(mesh);
+        activeBrainrots.push(mesh);
+    }
+
     // --- Mapa e Estruturas ---
     const mapSize = 200;
     const groundGeo = new THREE.PlaneGeometry(mapSize, mapSize);
     const groundMat = new THREE.MeshLambertMaterial({ color: 0x228B22 });
+    originalGroundMaterial = groundMat.clone();
     const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.name = 'ground';
     ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+    originalGroundColor.copy(ground.material.color);
     const conveyor = new THREE.Mesh(new THREE.BoxGeometry(8, 0.05, mapSize), new THREE.MeshLambertMaterial({ color: 0xDC143C }));
     conveyor.position.y = 0.03; scene.add(conveyor);
-    
+
     const wallHeight = 20; const wallThickness = 2; const wallOffset = mapSize / 2 - wallThickness / 2; const tunnelWidth = 12; const tunnelDepth = 4; const tunnelHeight = 8; const wallMaterialGrey = new THREE.MeshLambertMaterial({ color: 0x808080 }); const wallMaterialBrown = new THREE.MeshLambertMaterial({ color: 0x8B4513 }); const wallMaterialGreen = new THREE.MeshLambertMaterial({ color: 0x006400 }); const tunnelMaterialGrey = new THREE.MeshLambertMaterial({ color: 0x606060 });
     function createLayeredWall(width, height) { const wallGroup = new THREE.Group(); const layerHeight = height / 3; const greyLayer = new THREE.Mesh(new THREE.BoxGeometry(width, layerHeight, wallThickness), wallMaterialGrey); greyLayer.position.y = layerHeight * 0.5; const brownLayer = new THREE.Mesh(new THREE.BoxGeometry(width, layerHeight, wallThickness), wallMaterialBrown); brownLayer.position.y = layerHeight * 1.5; const greenLayer = new THREE.Mesh(new THREE.BoxGeometry(width, layerHeight, wallThickness), wallMaterialGreen); greenLayer.position.y = layerHeight * 2.5; wallGroup.add(greyLayer, brownLayer, greenLayer); wallGroup.traverse(node => { if(node.isMesh) { node.castShadow = true; node.receiveShadow = true; node.userData.isWall = true; }}); return wallGroup; }
     const sideWall = createLayeredWall(mapSize, wallHeight); sideWall.rotation.y = Math.PI / 2; sideWall.position.x = -wallOffset; scene.add(sideWall); sideWall.traverse(node => { if (node.isMesh) colliders.push(node) });
     const sideWall2 = createLayeredWall(mapSize, wallHeight); sideWall2.rotation.y = Math.PI / 2; sideWall2.position.x = wallOffset; scene.add(sideWall2); sideWall2.traverse(node => { if (node.isMesh) colliders.push(node) });
-    const wallSegmentWidth = (mapSize - tunnelWidth) / 2; 
+    const wallSegmentWidth = (mapSize - tunnelWidth) / 2;
     const backWallLeft = createLayeredWall(wallSegmentWidth, wallHeight); backWallLeft.position.set(-(tunnelWidth / 2) - (wallSegmentWidth / 2), 0, wallOffset); scene.add(backWallLeft); backWallLeft.traverse(node => { if (node.isMesh) colliders.push(node) });
     const backWallRight = createLayeredWall(wallSegmentWidth, wallHeight); backWallRight.position.set((tunnelWidth / 2) + (wallSegmentWidth / 2), 0, wallOffset); scene.add(backWallRight); backWallRight.traverse(node => { if (node.isMesh) colliders.push(node) });
     const frontWallLeft = createLayeredWall(wallSegmentWidth, wallHeight); frontWallLeft.position.set(-(tunnelWidth / 2) - (wallSegmentWidth / 2), 0, -wallOffset); scene.add(frontWallLeft); frontWallLeft.traverse(node => { if (node.isMesh) colliders.push(node) });
     const frontWallRight = createLayeredWall(wallSegmentWidth, wallHeight); frontWallRight.position.set((tunnelWidth / 2) + (wallSegmentWidth / 2), 0, -wallOffset); scene.add(frontWallRight); frontWallRight.traverse(node => { if (node.isMesh) colliders.push(node) });
     const wallAboveTunnel = createLayeredWall(tunnelWidth, wallHeight - tunnelHeight); wallAboveTunnel.position.set(0, tunnelHeight, -wallOffset); scene.add(wallAboveTunnel); wallAboveTunnel.traverse(node => { if (node.isMesh) colliders.push(node) });
     const wallAboveTunnel2 = createLayeredWall(tunnelWidth, wallHeight - tunnelHeight); wallAboveTunnel2.position.set(0, tunnelHeight, wallOffset); scene.add(wallAboveTunnel2); wallAboveTunnel2.traverse(node => { if (node.isMesh) colliders.push(node) });
-    function createTunnelStructure() { const tunnelGroup = new THREE.Group(); const tunnelGapHeight = 6; const sideThickness = 1.5; const base = new THREE.Mesh(new THREE.BoxGeometry(tunnelWidth, 0.5, tunnelDepth), tunnelMaterialGrey); base.position.y = 0.25; const leftSide = new THREE.Mesh(new THREE.BoxGeometry(sideThickness, tunnelGapHeight + 0.5, tunnelDepth), tunnelMaterialGrey); leftSide.position.set(-(tunnelWidth / 2) + (sideThickness / 2), tunnelGapHeight / 2 + 0.25, 0); const rightSide = new THREE.Mesh(new THREE.BoxGeometry(sideThickness, tunnelGapHeight + 0.5, tunnelDepth), tunnelMaterialGrey); rightSide.position.set((tunnelWidth / 2) - (sideThickness / 2), tunnelGapHeight / 2 + 0.25, 0); const topWall = new THREE.Mesh(new THREE.BoxGeometry(tunnelWidth, tunnelHeight - tunnelGapHeight - 0.5, tunnelDepth), tunnelMaterialGrey); topWall.position.y = tunnelGapHeight + 0.5 + ((tunnelHeight - tunnelGapHeight - 0.5) / 2); const darkEntrance = new THREE.Mesh(new THREE.BoxGeometry(tunnelWidth - (2 * sideThickness), tunnelGapHeight, 0.1), new THREE.MeshBasicMaterial({ color: 0x0A0A0A })); darkEntrance.position.set(0, tunnelGapHeight / 2 + 0.5, tunnelDepth / 2 - 0.1); tunnelGroup.add(base, leftSide, rightSide, topWall, darkEntrance); tunnelGroup.traverse(node => { if(node.isMesh) { node.castShadow = true; node.receiveShadow = true; colliders.push(node); }}); return tunnelGroup; } 
-    const tunnel1 = createTunnelStructure(); tunnel1.position.z = -wallOffset - (tunnelDepth / 2) + (wallThickness / 2); scene.add(tunnel1);
-    const tunnel2 = createTunnelStructure(); tunnel2.rotation.y = Math.PI; tunnel2.position.z = wallOffset + (tunnelDepth / 2) - (wallThickness / 2); scene.add(tunnel2);
-    
-    function createPlayerBase(ownerId) { 
-        const baseGroup = new THREE.Group(); 
-        baseGroup.userData = { ownerId: ownerId, pads: [], collectionPads: [], laserActive: false };
-        const materials = { baseFloorGrey: new THREE.MeshLambertMaterial({ color: 0x808080 }), walkwayRed: new THREE.MeshLambertMaterial({ color: 0xDC143C }), wallGrey: new THREE.MeshLambertMaterial({ color: 0x959595 }), padGreen: new THREE.MeshLambertMaterial({ color: 0x32CD32 }), padGrey: new THREE.MeshLambertMaterial({ color: 0xA9A9A9 }), circleYellow: new THREE.MeshLambertMaterial({ color: 0xFFFF00 }), blockerRed: new THREE.MeshLambertMaterial({ color: 0xFF0000 }), frameWhite: new THREE.MeshLambertMaterial({ color: 0xFFFFFF }), glass: new THREE.MeshBasicMaterial({ color: 0xaaccff, opacity: 0.3, transparent: true, side: THREE.DoubleSide }), }; 
-        const baseWidth = 24; const baseDepth = 30; const wallHeight = 10; 
-        const baseFloor = new THREE.Mesh(new THREE.BoxGeometry(baseWidth, 0.2, baseDepth), materials.baseFloorGrey); baseFloor.position.y = 0.1; baseGroup.add(baseFloor); 
-        const walkway = new THREE.Mesh(new THREE.BoxGeometry(8, 0.2, baseDepth), materials.walkwayRed); walkway.position.y = 0.2; baseGroup.add(walkway); 
+
+    function createPlayerBase(ownerId) {
+        const baseGroup = new THREE.Group();
+        baseGroup.userData = { ownerId: ownerId, pads: [], collectionPads: [], laserActive: false, luckyBlock: null };
+        const materials = { baseFloorGrey: new THREE.MeshLambertMaterial({ color: 0x808080 }), walkwayRed: new THREE.MeshLambertMaterial({ color: 0xDC143C }), wallGrey: new THREE.MeshLambertMaterial({ color: 0x959595 }), padGreen: new THREE.MeshLambertMaterial({ color: 0x32CD32 }), padGrey: new THREE.MeshLambertMaterial({ color: 0xA9A9A9 }), circleYellow: new THREE.MeshLambertMaterial({ color: 0xFFFF00 }), blockerRed: new THREE.MeshLambertMaterial({ color: 0xFF0000 }), frameWhite: new THREE.MeshLambertMaterial({ color: 0xFFFFFF }), glass: new THREE.MeshBasicMaterial({ color: 0xaaccff, opacity: 0.3, transparent: true, side: THREE.DoubleSide }), };
+        const baseWidth = 24; const baseDepth = 30; const wallHeight = 10;
+        const baseFloor = new THREE.Mesh(new THREE.BoxGeometry(baseWidth, 0.2, baseDepth), materials.baseFloorGrey); baseFloor.position.y = 0.1; baseGroup.add(baseFloor);
+        const walkway = new THREE.Mesh(new THREE.BoxGeometry(8, 0.2, baseDepth), materials.walkwayRed); walkway.position.y = 0.2; baseGroup.add(walkway);
         const yellowCircle = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 0.1, 32), materials.circleYellow); yellowCircle.position.set(0, 0.35, 8); baseGroup.add(yellowCircle); laserTriggers.push(yellowCircle);
-        const backWall = new THREE.Mesh(new THREE.BoxGeometry(baseWidth, wallHeight, 1), materials.wallGrey); backWall.position.set(0, wallHeight/2, baseDepth/2); backWall.userData.isWall = true; baseGroup.add(backWall); 
-        const doorWidth = 10; const sideWallWidth = (baseWidth - doorWidth) / 2; 
-        const frontWallLeft = new THREE.Mesh(new THREE.BoxGeometry(sideWallWidth, wallHeight, 1), materials.wallGrey); frontWallLeft.position.set(-baseWidth/2 + sideWallWidth/2, wallHeight/2, -baseDepth/2); frontWallLeft.userData.isWall = true; baseGroup.add(frontWallLeft); 
-        const frontWallRight = new THREE.Mesh(new THREE.BoxGeometry(sideWallWidth, wallHeight, 1), materials.wallGrey); frontWallRight.position.set(baseWidth/2 - sideWallWidth/2, wallHeight/2, -baseDepth/2); frontWallRight.userData.isWall = true; baseGroup.add(frontWallRight); 
-        const frontWallTop = new THREE.Mesh(new THREE.BoxGeometry(doorWidth, 2, 1), materials.wallGrey); frontWallTop.position.set(0, wallHeight - 1, -baseDepth/2); frontWallTop.userData.isWall = true; baseGroup.add(frontWallTop); 
+
+        const luckyBlockGeometry = new THREE.BoxGeometry(2, 2, 2);
+        const luckyBlockMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513, emissive: 0x442200 });
+        const luckyBlockMesh = new THREE.Mesh(luckyBlockGeometry, luckyBlockMaterial);
+        luckyBlockMesh.position.set(0, 1, -baseDepth / 2 + 5);
+        luckyBlockMesh.userData = { isLuckyBlock: true, ownerId: ownerId };
+        baseGroup.add(luckyBlockMesh);
+        baseGroup.userData.luckyBlock = luckyBlockMesh;
+        colliders.push(luckyBlockMesh);
+
+        const backWall = new THREE.Mesh(new THREE.BoxGeometry(baseWidth, wallHeight, 1), materials.wallGrey); backWall.position.set(0, wallHeight/2, baseDepth/2); backWall.userData.isWall = true; baseGroup.add(backWall);
+        const doorWidth = 10; const sideWallWidth = (baseWidth - doorWidth) / 2;
+        const frontWallLeft = new THREE.Mesh(new THREE.BoxGeometry(sideWallWidth, wallHeight, 1), materials.wallGrey); frontWallLeft.position.set(-baseWidth/2 + sideWallWidth/2, wallHeight/2, -baseDepth/2); frontWallLeft.userData.isWall = true; baseGroup.add(frontWallLeft);
+        const frontWallRight = new THREE.Mesh(new THREE.BoxGeometry(sideWallWidth, wallHeight, 1), materials.wallGrey); frontWallRight.position.set(baseWidth/2 - sideWallWidth/2, wallHeight/2, -baseDepth/2); frontWallRight.userData.isWall = true; baseGroup.add(frontWallRight);
+        const frontWallTop = new THREE.Mesh(new THREE.BoxGeometry(doorWidth, 2, 1), materials.wallGrey); frontWallTop.position.set(0, wallHeight - 1, -baseDepth/2); frontWallTop.userData.isWall = true; baseGroup.add(frontWallTop);
         const door = new THREE.Mesh(new THREE.BoxGeometry(doorWidth, wallHeight - 2, 1)); door.position.set(0, (wallHeight - 2) / 2, -baseDepth / 2); door.visible = false; door.userData = { isDoor: true, ownerId: ownerId }; baseGroup.add(door); colliders.push(door);
-        function createSideWallWithWindow(posX) { const wallGroup = new THREE.Group(); const frameThickness = 0.5; const wallPartHeight = 2.0; const bottomWall = new THREE.Mesh(new THREE.BoxGeometry(1, wallPartHeight, baseDepth), materials.wallGrey); bottomWall.position.set(posX, wallPartHeight/2, 0); bottomWall.userData.isWall = true; wallGroup.add(bottomWall); const topWall = new THREE.Mesh(new THREE.BoxGeometry(1, wallPartHeight, baseDepth), materials.wallGrey); topWall.position.set(posX, wallHeight - wallPartHeight/2, 0); topWall.userData.isWall = true; wallGroup.add(topWall); const frameTop = new THREE.Mesh(new THREE.BoxGeometry(frameThickness, frameThickness, baseDepth), materials.frameWhite); frameTop.position.set(posX, wallHeight - wallPartHeight - frameThickness/2, 0); wallGroup.add(frameTop); const frameBottom = new THREE.Mesh(new THREE.BoxGeometry(frameThickness, frameThickness, baseDepth), materials.frameWhite); frameBottom.position.set(posX, wallPartHeight + frameThickness/2, 0); wallGroup.add(frameBottom); const glassHeight = wallHeight - (2 * wallPartHeight) - (2 * frameThickness); const glass = new THREE.Mesh(new THREE.BoxGeometry(0.2, glassHeight, baseDepth - 2), materials.glass); glass.position.set(posX, wallPartHeight + frameThickness + glassHeight/2, 0); wallGroup.add(glass); return wallGroup; } 
+        function createSideWallWithWindow(posX) { const wallGroup = new THREE.Group(); const frameThickness = 0.5; const wallPartHeight = 2.0; const bottomWall = new THREE.Mesh(new THREE.BoxGeometry(1, wallPartHeight, baseDepth), materials.wallGrey); bottomWall.position.set(posX, wallPartHeight/2, 0); bottomWall.userData.isWall = true; wallGroup.add(bottomWall); const topWall = new THREE.Mesh(new THREE.BoxGeometry(1, wallPartHeight, baseDepth), materials.wallGrey); topWall.position.set(posX, wallHeight - wallPartHeight/2, 0); topWall.userData.isWall = true; wallGroup.add(topWall); const frameTop = new THREE.Mesh(new THREE.BoxGeometry(frameThickness, frameThickness, baseDepth), materials.frameWhite); frameTop.position.set(posX, wallHeight - wallPartHeight - frameThickness/2, 0); wallGroup.add(frameTop); const frameBottom = new THREE.Mesh(new THREE.BoxGeometry(frameThickness, frameThickness, baseDepth), materials.frameWhite); frameBottom.position.set(posX, wallPartHeight + frameThickness/2, 0); wallGroup.add(frameBottom); const glassHeight = wallHeight - (2 * wallPartHeight) - (2 * frameThickness); const glass = new THREE.Mesh(new THREE.BoxGeometry(0.2, glassHeight, baseDepth - 2), materials.glass); glass.position.set(posX, wallPartHeight + frameThickness + glassHeight/2, 0); wallGroup.add(glass); return wallGroup; }
         const sideWallLeft = createSideWallWithWindow(-baseWidth/2); baseGroup.add(sideWallLeft);
         const sideWallRight = createSideWallWithWindow(baseWidth/2); baseGroup.add(sideWallRight);
-        const ceiling = new THREE.Mesh(new THREE.BoxGeometry(baseWidth, 1, baseDepth), materials.wallGrey); ceiling.position.set(0, wallHeight, 0); ceiling.userData.isWall = true; baseGroup.add(ceiling); 
+        const ceiling = new THREE.Mesh(new THREE.BoxGeometry(baseWidth, 1, baseDepth), materials.wallGrey); ceiling.position.set(0, wallHeight, 0); ceiling.userData.isWall = true; baseGroup.add(ceiling);
         const padDepth = 4; const padWidthGreen = 2.5; const padWidthGrey = 3.5; const padSpacingZ = 7; const startZ = -baseDepth / 2 + 6;
         for (let i = 0; i < 4; i++) {
             const currentZ = startZ + i * padSpacingZ;
@@ -157,76 +527,666 @@
             const greenPadRight = new THREE.Mesh(new THREE.BoxGeometry(padWidthGreen, 0.1, padDepth), materials.padGreen); greenPadRight.position.set(6, 0.35, currentZ); baseGroup.add(greenPadRight); baseGroup.userData.collectionPads.push(greenPadRight);
             const greyPadRight = new THREE.Mesh(new THREE.BoxGeometry(padWidthGrey, 0.1, padDepth - 1), materials.padGrey); greyPadRight.position.set(10, 0.35, currentZ); greyPadRight.userData = { isPad: true, isOccupied: false }; baseGroup.add(greyPadRight); baseGroup.userData.pads.push(greyPadRight);
         }
-        baseGroup.traverse(function(node) { if (node.isMesh && node.userData.isWall) { node.castShadow = true; node.receiveShadow = true; colliders.push(node); } }); 
-        return baseGroup; 
+        baseGroup.traverse(function(node) { if (node.isMesh && node.userData.isWall) { node.castShadow = true; node.receiveShadow = true; colliders.push(node); } });
+        return baseGroup;
     }
-    
-    let baseIdCounter = 0; const basePositions = []; const baseSpacingZ = 45; const baseOffsetX = 35; 
+
+    let baseIdCounter = 0; const basePositions = []; const baseSpacingZ = 45; const baseOffsetX = 35;
     for (let i = 0; i < 4; i++) { const zPos = -mapSize / 2.8 + i * baseSpacingZ; basePositions.push({pos: new THREE.Vector3(baseOffsetX, 0, zPos), rot: -Math.PI / 2 + Math.PI}); basePositions.push({pos: new THREE.Vector3(-baseOffsetX, 0, zPos), rot: Math.PI / 2 + Math.PI}); }
     basePositions.forEach(data => { const base = createPlayerBase(baseIdCounter); base.position.copy(data.pos); base.rotation.y = data.rot; scene.add(base); allBases.push(base); if (baseIdCounter === MY_PLAYER_ID) { const labelDiv = document.createElement('div'); labelDiv.className = 'label'; labelDiv.style.fontSize = '24px'; labelDiv.innerHTML = `⬇️ Sua Base ⬇️`; const baseLabel = new CSS2DObject(labelDiv); baseLabel.position.set(0, 15, 0); base.add(baseLabel); const collectionDiv = document.createElement('div'); collectionDiv.className = 'label'; collectionDiv.style.fontSize = '20px'; collectionDiv.id = 'collection-label'; collectionDiv.textContent = '$0 para Coletar'; base.add(new CSS2DObject(collectionDiv)); } baseIdCounter++; });
-    
+
     function createCharacter() { const character = new THREE.Group(); const materials = { skin: new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.8 }), torsoBlack: new THREE.MeshStandardMaterial({ color: 0x1e1e1e, roughness: 0.8 }), shirtBlue: new THREE.MeshStandardMaterial({ color: 0x00a2ff, roughness: 0.8 }), hair: new THREE.MeshStandardMaterial({ color: 0x964B00, roughness: 0.8 }), }; const head = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 0.8, 16), materials.skin); head.position.y = 2.4; character.add(head); const torso = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2, 0.8), materials.torsoBlack); torso.position.y = 1; character.add(torso); const shirtDesign = new THREE.Mesh(new THREE.BoxGeometry(1, 1.2, 0.1), materials.shirtBlue); shirtDesign.position.y = 1.2; shirtDesign.position.z = 0.41; character.add(shirtDesign); function createFaceTexture() { const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256; const ctx = canvas.getContext('2d'); ctx.fillStyle = '#cccccc'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.fillStyle = 'black'; ctx.fillRect(70, 80, 30, 30); ctx.fillRect(156, 80, 30, 30); ctx.beginPath(); ctx.arc(128, 160, 40, 0, Math.PI, false); ctx.lineWidth = 10; ctx.strokeStyle = 'black'; ctx.stroke(); return new THREE.CanvasTexture(canvas); } const facePlane = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.7), new THREE.MeshBasicMaterial({ map: createFaceTexture() })); facePlane.position.set(0, 2.4, 0.4); character.add(facePlane); const limbGeo = new THREE.BoxGeometry(0.6, 2, 0.7); const leftArm = new THREE.Mesh(limbGeo, materials.skin); leftArm.position.set(-1.05, 1, 0); character.add(leftArm); const rightArm = new THREE.Mesh(limbGeo, materials.skin); rightArm.position.set(1.05, 1, 0); character.add(rightArm); const leftLeg = new THREE.Mesh(limbGeo, materials.skin); leftLeg.position.set(-0.4, -1, 0); character.add(leftLeg); const rightLeg = new THREE.Mesh(limbGeo, materials.skin); rightLeg.position.set(0.4, -1, 0); character.add(rightLeg); const hairGroup = new THREE.Group(); hairGroup.position.y = 2.8; character.add(hairGroup); const hairPart1 = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.4, 1.5), materials.hair); hairGroup.add(hairPart1); const hairPart2 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 1.6), materials.hair); hairPart2.position.set(-0.4, 0.2, 0); hairPart2.rotation.z = Math.PI / 8; hairGroup.add(hairPart2); const hairPart3 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 1.6), materials.hair); hairPart3.position.set(0.4, 0.2, 0); hairPart3.rotation.z = -Math.PI / 8; hairGroup.add(hairPart3); const hairPart4 = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.4, 0.5), materials.hair); hairPart4.position.set(0, 0.3, -0.4); hairPart4.rotation.x = -Math.PI / 8; hairGroup.add(hairPart4);
         character.userData.limbs = { leftArm, rightArm, leftLeg, rightLeg }; character.traverse(node => { if(node.isMesh) node.castShadow = true; });
         const playerBase = allBases.find(b => b.userData.ownerId === MY_PLAYER_ID); const spawnPoint = new THREE.Vector3(0, playerHeight / 2, -20); spawnPoint.applyMatrix4(playerBase.matrixWorld); character.position.copy(spawnPoint);
         scene.add(character); return character;
     }
     const player = createCharacter();
-    const playerCollider = new THREE.Box3(); 
-    
+    const playerCollider = new THREE.Box3();
+
     // --- Lógica da UI e Controles ---
     const joystickContainer = document.getElementById('joystick-container');
     const joystickHandle = document.getElementById('joystick-handle');
     const jumpButton = document.getElementById('jump-button');
     const buyButton = document.getElementById('buy-button');
-    const joystickRadius = joystickContainer.clientWidth / 2;  // <-- LINHA CORRIGIDA
+    const shopButton = document.getElementById('shop-button');
+    const luckyBlockButton = document.getElementById('lucky-block-btn');
+    const joystickRadius = joystickContainer.clientWidth / 2;
     function onJoystickMove(event) { event.preventDefault(); const touch = event.touches[0]; const rect = joystickContainer.getBoundingClientRect(); const x = touch.clientX - rect.left - joystickRadius; const y = touch.clientY - rect.top - joystickRadius; const distance = Math.sqrt(x*x + y*y); const clampedX = x / distance * Math.min(distance, joystickRadius - 30); const clampedY = y / distance * Math.min(distance, joystickRadius - 30); joystickHandle.style.transform = `translate(${clampedX}px, ${clampedY}px)`; moveDirection.set(clampedX / (joystickRadius - 30), -clampedY / (joystickRadius - 30)).normalize(); }
     function onJoystickEnd(event) { joystickHandle.style.transform = `translate(0px, 0px)`; moveDirection.set(0, 0); document.removeEventListener('touchmove', onJoystickMove); document.removeEventListener('touchend', onJoystickEnd); }
     joystickContainer.addEventListener('touchstart', (event) => { document.addEventListener('touchmove', onJoystickMove, { passive: false }); document.addEventListener('touchend', onJoystickEnd); }, { passive: false });
     jumpButton.addEventListener('click', () => { if (onGround) { playerVelocity.y = jumpHeight; onGround = false; } });
     buyButton.addEventListener('click', () => { if(targetBrainrot && playerMoney >= targetBrainrot.userData.price) { playerMoney -= targetBrainrot.userData.price; updateMoneyDisplay(); const playerBase = allBases.find(b => b.userData.ownerId === MY_PLAYER_ID); const targetPad = playerBase.userData.pads.find(p => !p.userData.isOccupied); if(targetPad) { targetPad.userData.isOccupied = true; const targetWorldPos = new THREE.Vector3(); targetPad.getWorldPosition(targetWorldPos); targetBrainrot.userData.state = 'movingToPad'; targetBrainrot.userData.destination = targetWorldPos; targetBrainrot.userData.ownerId = MY_PLAYER_ID; targetBrainrot.children.find(c => c.isCSS2DObject).element.style.display = 'none'; totalGenerationPerSecond += targetBrainrot.userData.generation; updateMoneyDisplay(); } else { console.log("Sem pads disponíveis!"); playerMoney += targetBrainrot.userData.price; updateMoneyDisplay(); } targetBrainrot = null; buyButton.style.display = 'none'; } });
 
-    // --- Lógica dos Menus ADM ---
-    const menuButton = document.getElementById('menu-button'); const adminMenu = document.getElementById('admin-menu');
-    const loginPanel = document.getElementById('login-panel'); const banPanel = document.getElementById('ban-panel');
+    // --- Lógica da Loja ---
+    const shopPanel = document.getElementById('shop-panel');
+    const shopItemsContainer = document.getElementById('shop-items');
+
+    const shopItems = [
+        { id: 'luck1', name: 'Sorte 2x (10s)', price: 10, type: 'luck', value: 2, duration: 10000 },
+        { id: 'luck2', name: 'Sorte 4x (10s)', price: 20, type: 'luck', value: 4, duration: 10000 },
+        { id: 'luck3', name: 'Sorte 6x (10s)', price: 30, type: 'luck', value: 6, duration: 10000 },
+        { id: 'luck4', name: 'Sorte 8x (10s)', price: 40, type: 'luck', value: 8, duration: 10000 },
+        { id: 'luckyblock', name: 'Lucky Block de Taco', price: 50, type: 'luckyblock', value: 1 }
+    ];
+
+    function populateShop() {
+        shopItemsContainer.innerHTML = '';
+        shopItems.forEach(item => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'shop-item';
+            itemDiv.innerHTML = `
+                <span class="shop-item-name">${item.name}</span>
+                <span class="shop-item-price">${item.price} Robux</span>
+                <button class="shop-item-buy-btn" data-item-id="${item.id}">Comprar</button>
+            `;
+            shopItemsContainer.appendChild(itemDiv);
+        });
+
+        document.querySelectorAll('.shop-item-buy-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const itemId = e.target.getAttribute('data-item-id');
+                const item = shopItems.find(i => i.id === itemId);
+                if (item && playerRobux >= item.price) {
+                    playerRobux -= item.price;
+                    updateRobuxDisplay();
+                    if (item.type === 'luck') {
+                        applyTemporaryLuck(item.value, item.duration);
+                    } else if (item.type === 'luckyblock') {
+                        alert("Você comprou uma Lucky Block de Taco! Use-a na sua base.");
+                    }
+                } else if (playerRobux < item.price) {
+                    alert("Robux insuficientes!");
+                }
+            });
+        });
+    }
+
+    function applyTemporaryLuck(multiplier, duration) {
+        if (currentLuckTimeout) {
+            clearTimeout(currentLuckTimeout);
+            const oldLuckKey = Array.from(activeEffects.keys()).find(key => key.startsWith('luck-'));
+            if (oldLuckKey) {
+                removeEffectIcon(oldLuckKey);
+            }
+        }
+
+        const originalLuck = playerLuck;
+        playerLuck *= multiplier;
+        console.log(`Sorte aumentada para ${playerLuck}x por ${duration/1000} segundos.`);
+
+        let luckIcon = '☘️';
+        if (multiplier >= 8) luckIcon = '🟢';
+        else if (multiplier >= 6) luckIcon = '🍀';
+        else if (multiplier >= 4) luckIcon = '🍀';
+        else if (multiplier >= 2) luckIcon = '☘️';
+        addEffectIcon(`luck-${multiplier}x-${Date.now()}`, luckIcon);
+
+        currentLuckTimeout = setTimeout(() => {
+            playerLuck = originalLuck;
+            console.log(`Sorte restaurada para ${playerLuck}x.`);
+            const luckKey = Array.from(activeEffects.keys()).find(key => key.startsWith('luck-') && key.includes(multiplier + 'x'));
+            if (luckKey) {
+                removeEffectIcon(luckKey);
+            }
+            currentLuckTimeout = null;
+        }, duration);
+    }
+
+    shopButton.addEventListener('click', () => {
+        shopPanel.style.display = 'block';
+    });
+
+    // --- Lógica da Lucky Block ---
+    const luckyBlockOverlay = document.getElementById('lucky-block-overlay');
+    const luckyBlockResult = document.getElementById('lucky-block-result');
+
+    function openLuckyBlock() {
+        luckyBlockOverlay.style.display = 'flex';
+        luckyBlockResult.textContent = '?';
+
+        setTimeout(() => {
+            const possibleRarities = ['Mythic', 'God'];
+            const chosenRarity = possibleRarities[Math.floor(Math.random() * possibleRarities.length)];
+            const types = BRAINROT_DATA[chosenRarity];
+            if (types && types.length > 0) {
+                const chosenBrainrot = types[Math.floor(Math.random() * types.length)];
+                luckyBlockResult.textContent = chosenBrainrot.name;
+
+                setTimeout(() => {
+                    alert(`Parabéns! Você ganhou: ${chosenBrainrot.name} (${RARITY_DATA[chosenRarity].name})!`);
+                    luckyBlockOverlay.style.display = 'none';
+                }, 1500);
+            } else {
+                console.error(`Nenhum brainrot disponível para a raridade sorteada: ${chosenRarity}`);
+                luckyBlockResult.textContent = 'Erro!';
+                setTimeout(() => {
+                    luckyBlockOverlay.style.display = 'none';
+                }, 1500);
+            }
+        }, 2000);
+    }
+
+    // --- Funções de Evento (Atualizadas para múltiplos eventos) ---
+    function startEvent(eventName, duration) {
+        // Verifica se o evento já está ativo
+        if (activeEvents.has(eventName)) {
+            console.log(`Evento ${eventName} já está ativo. Não pode ser ativado novamente.`);
+            return false;
+        }
+
+        activeEvents.add(eventName);
+        console.log(`Evento ${eventName} iniciado.`);
+
+        let eventSpecificFunction;
+        switch (eventName) {
+            case 'Galaxy':
+                eventSpecificFunction = startGalaxyEvent;
+                break;
+            case 'Taco':
+                eventSpecificFunction = startTacoEvent;
+                break;
+            case 'Brasil':
+                eventSpecificFunction = startBrasilEvent;
+                break;
+            default:
+                console.warn(`Evento desconhecido: ${eventName}`);
+                activeEvents.delete(eventName);
+                return false;
+        }
+
+        // Executa a função específica do evento
+        eventSpecificFunction();
+
+        // Define o temporizador para terminar o evento
+        const timerId = setTimeout(() => {
+            endEvent(eventName);
+        }, duration);
+
+        // Armazena o ID do timeout e o multiplicador
+        eventTimers.set(eventName, timerId);
+        // Armazena o multiplicador base (pode ser ajustado dentro da função específica)
+        if (eventName === 'Galaxy') eventGenerationMultipliers.set('Galaxy', 2.0);
+        else if (eventName === 'Taco') eventGenerationMultipliers.set('Taco', 3.0);
+        else if (eventName === 'Brasil') eventGenerationMultipliers.set('Brasil', 5.0); // Exemplo
+
+        updateMoneyDisplay(); // Atualiza a geração total
+        return true;
+    }
+
+    function endEvent(eventName) {
+        if (!activeEvents.has(eventName)) return;
+
+        console.log(`Evento ${eventName} terminado.`);
+
+        // Remove o evento ativo
+        activeEvents.delete(eventName);
+
+        // Limpa o temporizador
+        if (eventTimers.has(eventName)) {
+            clearTimeout(eventTimers.get(eventName));
+            eventTimers.delete(eventName);
+        }
+
+        // Limpa o multiplicador
+        if (eventGenerationMultipliers.has(eventName)) {
+            eventGenerationMultipliers.delete(eventName);
+        }
+
+        // Executa a função de término específica
+        switch (eventName) {
+            case 'Galaxy':
+                endGalaxyEvent();
+                break;
+            case 'Taco':
+                endTacoEvent();
+                break;
+            case 'Brasil':
+                endBrasilEvent();
+                break;
+        }
+
+        // Remove o indicador visual
+        if (eventName === 'Taco') tacoEventIndicator.style.display = 'none';
+        else if (eventName === 'Galaxy') galaxyEventIndicator.style.display = 'none';
+        else if (eventName === 'Brasil') brasilEventIndicator.style.display = 'none';
+
+        // Remove o ícone de efeito
+        removeEffectIcon(`event-${eventName}`);
+
+        updateMoneyDisplay(); // Atualiza a geração total
+    }
+
+    function startGalaxyEvent() {
+        scene.background = new THREE.Color(0x1a0033);
+        ground.material.color.set(0x87CEFA);
+        galaxyEventIndicator.style.display = 'block';
+        addEffectIcon('event-galaxy', '🌌');
+    }
+
+    function endGalaxyEvent() {
+        // Se Galaxy não for o último evento ativo, não restaura a cor original
+        if (!activeEvents.has('Galaxy')) {
+            scene.background = originalSkyColor;
+            ground.material.color.copy(originalGroundColor);
+        }
+    }
+
+    function startTacoEvent() {
+        scene.background = new THREE.Color(0xFFD700);
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 128;
+        canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = 'rgba(255, 215, 0, 0.3)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.font = '40px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'rgba(255, 165, 0, 0.8)';
+        ctx.fillText('🌮', canvas.width / 2, canvas.height / 2);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(mapSize / 10, mapSize / 10);
+
+        const tacoGroundMaterial = new THREE.MeshLambertMaterial({ map: texture });
+        ground.material = tacoGroundMaterial;
+
+        const cannonGeometry = new THREE.CylinderGeometry(0.5, 0.5, 2, 16);
+        const cannonMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+        cannonObject = new THREE.Mesh(cannonGeometry, cannonMaterial);
+        cannonObject.position.set(0, 15, -mapSize / 2 + 10);
+        cannonObject.rotation.x = Math.PI / 2;
+        scene.add(cannonObject);
+
+        function shootTaco() {
+            const tacoGeometry = new THREE.CylinderGeometry(0.3, 0.3, 1.5, 8);
+            const tacoMaterial = new THREE.MeshLambertMaterial({ color: 0xFFA500, transparent: true, opacity: 0.7 });
+            const taco = new THREE.Mesh(tacoGeometry, tacoMaterial);
+            taco.position.copy(cannonObject.position);
+            taco.rotation.copy(cannonObject.rotation);
+
+            const tacoVelocity = new THREE.Vector3(0, 0, 15);
+            const tacoGravity = new THREE.Vector3(0, -gravity, 0);
+            const tacoOnGround = false;
+
+            scene.add(taco);
+            tacoMeshes.push({ mesh: taco, velocity: tacoVelocity, gravity: tacoGravity, onGround: tacoOnGround });
+        }
+
+        tacoInterval = setInterval(shootTaco, 2000);
+
+        function createFallingTaco() {
+            const tacoElement = document.createElement('div');
+            tacoElement.className = 'falling-taco';
+            tacoElement.textContent = '🌮';
+            tacoElement.style.left = `${Math.random() * window.innerWidth}px`;
+            const duration = 3 + Math.random() * 2;
+            tacoElement.style.animationDuration = `${duration}s`;
+            document.body.appendChild(tacoElement);
+
+            tacoElement.addEventListener('animationend', () => {
+                tacoElement.remove();
+            });
+        }
+
+        fallingTacoInterval = setInterval(createFallingTaco, 800);
+
+        tacoEventIndicator.style.display = 'block';
+        addEffectIcon('event-taco', '🌮');
+        tacoAudio.play().catch(e => console.log("Erro ao tocar áudio do evento Taco:", e));
+    }
+
+    function endTacoEvent() {
+        if (cannonObject) { scene.remove(cannonObject); cannonObject = null; }
+        if (tacoInterval) { clearInterval(tacoInterval); tacoInterval = null; }
+        for (const tacoObj of tacoMeshes) { scene.remove(tacoObj.mesh); }
+        tacoMeshes = [];
+        if (fallingTacoInterval) { clearInterval(fallingTacoInterval); fallingTacoInterval = null; }
+        document.querySelectorAll('.falling-taco').forEach(el => el.remove());
+
+        // Se Taco não for o último evento ativo, restaura a textura original do chão
+        if (!activeEvents.has('Taco')) {
+            ground.material = originalGroundMaterial.clone();
+        }
+
+        tacoAudio.pause();
+        tacoAudio.currentTime = 0;
+    }
+
+    // --- Funções do Evento Brasil ---
+    function startBrasilEvent() {
+        // Animação de entrada
+        brasilAnimationOverlay.style.display = 'block';
+        brasilAnimationText.style.display = 'block';
+
+        // Animação de luzes piscando
+        brasilAnimationInterval = setInterval(() => {
+            const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0x00ffff, 0xff00ff];
+            scene.background.setHex(colors[Math.floor(Math.random() * colors.length)]);
+        }, 200);
+
+        // Animação de texto
+        setTimeout(() => {
+            brasilAnimationText.textContent = "Vai Brasil!";
+            brasilAnimationText.style.textShadow = "0 0 10px #ff0000, 0 0 20px #ff0000, 0 0 30px #ff0000";
+        }, 2000);
+
+        // Finaliza a animação
+        setTimeout(() => {
+            brasilAnimationOverlay.style.display = 'none';
+            clearInterval(brasilAnimationInterval);
+            brasilAnimationInterval = null;
+            // Restaura a cor original após a animação
+            scene.background = originalSkyColor;
+
+            // Cria o personagem gigante (exemplo simplificado)
+            const giantCharacter = new THREE.Group();
+            const body = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 3, 16), new THREE.MeshStandardMaterial({ color: 0x006400 })); // Verde
+            body.position.y = 1.5;
+            giantCharacter.add(body);
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.8, 16, 16), new THREE.MeshStandardMaterial({ color: 0xcccccc }));
+            head.position.y = 3.3;
+            giantCharacter.add(head);
+            giantCharacter.position.set(0, 1.5, -mapSize / 2 + 10); // Posição na frente do mapa
+            giantCharacter.scale.set(3, 3, 3); // Torna gigante
+            scene.add(giantCharacter);
+            brasilCharacter = giantCharacter;
+
+            // Cria a base especial do Brasil
+            const brasilBaseGroup = createPlayerBase('brasil'); // ID especial
+            brasilBaseGroup.position.set(0, 0, mapSize / 2 - 30); // Posição no final do mapa
+            scene.add(brasilBaseGroup);
+            brasilBase = brasilBaseGroup;
+
+            // Adiciona brainrots na base do Brasil (acima de mítico, exceto OG)
+            const raritiesForBrasil = ['Mythic', 'God', 'Secret']; // Exclui 'OG'
+            for (let i = 0; i < 20; i++) { // 20 brainrots
+                const rarity = raritiesForBrasil[Math.floor(Math.random() * raritiesForBrasil.length)];
+                const types = BRAINROT_DATA[rarity];
+                if (types && types.length > 0) {
+                    const data = types[Math.floor(Math.random() * types.length)];
+                    const geometry = new THREE.SphereGeometry(1, 32, 16);
+                    const material = new THREE.MeshStandardMaterial({ color: data.color });
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.castShadow = true;
+                    // Posição aleatória dentro da base
+                    const x = (Math.random() - 0.5) * 20;
+                    const z = (Math.random() - 0.5) * 25;
+                    mesh.position.set(x, 1, z);
+                    mesh.userData = { ...data, ownerId: 'brasil', rarity: rarity, state: 'generating', accumulatedMoney: 0, destination: null, onTaco: false };
+
+                    const textDiv = document.createElement('div');
+                    textDiv.className = 'label';
+                    textDiv.innerHTML = `${data.name}<br><span style="color: ${RARITY_DATA[rarity].color}">${RARITY_DATA[rarity].name}</span><br>$${data.price}<br>+${data.generation}/s`;
+                    const textLabel = new CSS2DObject(textDiv);
+                    textLabel.position.y = 2.0;
+                    mesh.add(textLabel);
+
+                    brasilBase.add(mesh);
+                    activeBrainrots.push(mesh);
+                }
+            }
+
+            // Aplica efeito de sorte máxima temporária na base Brasil
+            // (Simulado com multiplicador global do evento)
+            // eventGenerationMultipliers.set('Brasil', 10.0); // Já foi definido no startEvent
+
+            // Mostra indicador visual e ícone
+            brasilEventIndicator.style.display = 'block';
+            addEffectIcon('event-brasil', '🇧🇷');
+
+        }, 4000); // Duração total da animação
+    }
+
+    function endBrasilEvent() {
+        // Remove o personagem gigante
+        if (brasilCharacter) {
+            scene.remove(brasilCharacter);
+            brasilCharacter = null;
+        }
+        // Remove a base do Brasil
+        if (brasilBase) {
+            scene.remove(brasilBase);
+            // Remove os brainrots da base do Brasil da lista global
+            for (let i = activeBrainrots.length - 1; i >= 0; i--) {
+                if (activeBrainrots[i].userData.ownerId === 'brasil') {
+                    scene.remove(activeBrainrots[i]);
+                    activeBrainrots.splice(i, 1);
+                }
+            }
+            brasilBase = null;
+        }
+        // Para a animação de luzes se ainda estiver ativa
+        if (brasilAnimationInterval) {
+            clearInterval(brasilAnimationInterval);
+            brasilAnimationInterval = null;
+        }
+        brasilAnimationOverlay.style.display = 'none';
+        brasilAnimationText.style.display = 'none';
+    }
+
+    // --- Lógica dos Menus ADM (Atualizada) ---
+    const menuButton = document.getElementById('menu-button');
+    const adminMenu = document.getElementById('admin-menu');
+    const adminPanel = document.getElementById('admin-panel');
+    const loginPanel = document.getElementById('login-panel');
+    const banPanel = document.getElementById('ban-panel');
+
     menuButton.addEventListener('click', () => { adminMenu.style.display = adminMenu.style.display === 'block' ? 'none' : 'block'; });
     document.getElementById('menu-login-btn').addEventListener('click', () => { loginPanel.style.display = 'block'; adminMenu.style.display = 'none'; });
-    document.querySelectorAll('.close-btn').forEach(btn => btn.addEventListener('click', (e) => e.target.parentElement.style.display = 'none'));
-    document.getElementById('admin-login-btn').addEventListener('click', () => { const user = document.getElementById('admin-user').value; const pass = document.getElementById('admin-pass').value; const errorDiv = document.getElementById('login-error'); if (user === 'ADM' && pass === '093106Rm#') { isAdmin = true; document.querySelectorAll('#admin-menu button').forEach(b => b.disabled = false); console.log("Login de ADM realizado!"); loginPanel.style.display = 'none'; errorDiv.textContent = ''; } else { errorDiv.textContent = 'Usuário ou senha inválidos.'; } });
-    document.getElementById('menu-event-btn').addEventListener('click', () => { toggleGalaxyEvent(); adminMenu.style.display = 'none'; });
-    document.getElementById('menu-money-btn').addEventListener('click', () => { const amount = parseInt(prompt("Qual quantia de dinheiro você quer adicionar?")); if(!isNaN(amount)) { playerMoney += amount; updateMoneyDisplay(); } adminMenu.style.display = 'none'; });
+    document.getElementById('menu-open-admin-panel-btn').addEventListener('click', () => { if (isAdmin) adminPanel.style.display = 'block'; adminMenu.style.display = 'none'; }); // Novo botão
+    document.querySelectorAll('.close-btn').forEach(btn => btn.addEventListener('click', (e) => { e.target.parentElement.style.display = 'none'; }));
+
+    // --- Abas do Painel ADM ---
+    document.querySelectorAll('.admin-tab-button').forEach(button => {
+        button.addEventListener('click', () => {
+            const tabName = button.getAttribute('data-tab');
+
+            // Remove a classe 'active' de todos os botões e abas
+            document.querySelectorAll('.admin-tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.admin-tab').forEach(tab => tab.classList.remove('active'));
+
+            // Adiciona a classe 'active' ao botão e à aba clicados
+            button.classList.add('active');
+            document.getElementById(`admin-tab-${tabName}`).classList.add('active');
+        });
+    });
+
+    // --- Eventos do Painel ADM ---
+    document.getElementById('spawn-brainrot-confirm-btn').addEventListener('click', () => {
+        if (!isAdmin) { alert("Acesso negado. Faça login como ADM."); return; }
+        const name = document.getElementById('spawn-name-input').value;
+        if (name) {
+            let foundBrainrot = null;
+            let foundRarity = null;
+            for (const [rarity, types] of Object.entries(BRAINROT_DATA)) {
+                const match = types.find(t => t.name === name);
+                if (match) {
+                    foundBrainrot = match;
+                    foundRarity = rarity;
+                    break;
+                }
+            }
+            if (foundBrainrot && foundRarity) {
+                const geometry = new THREE.SphereGeometry(1, 32, 16);
+                const material = new THREE.MeshStandardMaterial({ color: foundBrainrot.color });
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.castShadow = true;
+                const playerBase = allBases.find(b => b.userData.ownerId === MY_PLAYER_ID);
+                const spawnPoint = new THREE.Vector3(player.position.x, 1, player.position.z - 5);
+                mesh.position.copy(spawnPoint);
+                mesh.userData = { ...foundBrainrot, ownerId: MY_PLAYER_ID, rarity: foundRarity, state: 'onConveyor', accumulatedMoney: 0, destination: null, onTaco: false };
+
+                const textDiv = document.createElement('div');
+                textDiv.className = 'label';
+                textDiv.innerHTML = `${foundBrainrot.name}<br><span style="color: ${RARITY_DATA[foundRarity].color}">${RARITY_DATA[foundRarity].name}</span><br>$${foundBrainrot.price}<br>+${foundBrainrot.generation}/s`;
+                const textLabel = new CSS2DObject(textDiv);
+                textLabel.position.y = 2.0;
+                mesh.add(textLabel);
+
+                scene.add(mesh);
+                activeBrainrots.push(mesh);
+                console.log(`ADM spawnou: ${foundBrainrot.name} (${foundRarity})`);
+                document.getElementById('spawn-name-input').value = ''; // Limpa o input
+            } else {
+                alert("Nome de brainrot não encontrado.");
+            }
+        }
+    });
+
+    document.getElementById('add-money-btn').addEventListener('click', () => {
+        if (!isAdmin) { alert("Acesso negado. Faça login como ADM."); return; }
+        const amount = parseInt(document.getElementById('add-money-input').value);
+        if (!isNaN(amount) && amount > 0) {
+            playerMoney += amount;
+            updateMoneyDisplay();
+            console.log(`ADM adicionou $${amount} de dinheiro.`);
+        }
+    });
+
+    document.getElementById('add-robux-btn').addEventListener('click', () => {
+        if (!isAdmin) { alert("Acesso negado. Faça login como ADM."); return; }
+        const amount = parseInt(document.getElementById('add-robux-input').value);
+        if (!isNaN(amount) && amount > 0) {
+            playerRobux += amount;
+            updateRobuxDisplay();
+            console.log(`ADM adicionou ${amount} Robux.`);
+        }
+    });
+
+    document.getElementById('add-luck-btn').addEventListener('click', () => {
+        if (!isAdmin) { alert("Acesso negado. Faça login como ADM."); return; }
+        const multiplier = parseFloat(document.getElementById('add-luck-input').value);
+        const duration = parseInt(document.getElementById('add-luck-duration').value);
+        if (!isNaN(multiplier) && multiplier > 0 && !isNaN(duration) && duration > 0) {
+            applyTemporaryLuck(multiplier, duration * 1000);
+            console.log(`ADM adicionou sorte temporária: ${multiplier}x por ${duration}s`);
+        } else {
+            alert("Multiplicador ou duração inválidos.");
+        }
+    });
+
+    document.getElementById('activate-galaxy-btn').addEventListener('click', () => {
+        if (!isAdmin) { alert("Acesso negado. Faça login como ADM."); return; }
+        const duration = parseInt(document.getElementById('event-duration-galaxy').value) * 1000;
+        if (!isNaN(duration) && duration > 0) {
+            startEvent('Galaxy', duration);
+        }
+    });
+
+    document.getElementById('activate-taco-btn').addEventListener('click', () => {
+        if (!isAdmin) { alert("Acesso negado. Faça login como ADM."); return; }
+        const duration = parseInt(document.getElementById('event-duration-taco').value) * 1000;
+        if (!isNaN(duration) && duration > 0) {
+            startEvent('Taco', duration);
+        }
+    });
+
+    document.getElementById('activate-brasil-btn').addEventListener('click', () => {
+        if (!isAdmin) { alert("Acesso negado. Faça login como ADM."); return; }
+        const duration = parseInt(document.getElementById('event-duration-brasil').value) * 1000;
+        if (!isNaN(duration) && duration > 0) {
+            startEvent('Brasil', duration);
+        }
+    });
+
+    document.getElementById('admin-login-btn').addEventListener('click', () => {
+        const user = document.getElementById('admin-user').value;
+        const pass = document.getElementById('admin-pass').value;
+        const errorDiv = document.getElementById('login-error');
+        if (user === 'ADM' && pass === '093106Rm#') {
+            isAdmin = true;
+            document.querySelectorAll('#admin-menu button').forEach(b => b.disabled = false);
+            console.log("Login de ADM realizado!");
+            loginPanel.style.display = 'none';
+            errorDiv.textContent = '';
+        } else {
+            errorDiv.textContent = 'Usuário ou senha inválidos.';
+        }
+    });
     document.getElementById('menu-ban-btn').addEventListener('click', () => { banPanel.style.display = 'block'; adminMenu.style.display = 'none'; });
     document.getElementById('ban-confirm-btn').addEventListener('click', () => { const user = document.getElementById('ban-user').value; const reason = document.getElementById('ban-reason').value; if(user && reason) { alert(`ADM baniu ${user}. Motivo: ${reason}`); banPanel.style.display = 'none'; } });
 
     // --- Lógica do Jogo ---
-    function createGalaxy() { const vertices = []; for (let i = 0; i < 10000; i++) { const x = THREE.MathUtils.randFloatSpread(2000); const y = THREE.MathUtils.randFloatSpread(2000); const z = THREE.MathUtils.randFloatSpread(2000); vertices.push(x, y, z); } const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3)); const material = new THREE.PointsMaterial({ color: 0xffffff, size: 1.5 }); stars = new THREE.Points(geometry, material); stars.visible = false; scene.add(stars); }
-    function toggleGalaxyEvent() { isGalaxyEventActive = !isGalaxyEventActive; stars.visible = isGalaxyEventActive; scene.background.set(isGalaxyEventActive ? 0x1a0035 : originalSkyColor); ground.material.color.set(isGalaxyEventActive ? 0x87CEFA : 0x228B22); document.getElementById('menu-event-btn').textContent = isGalaxyEventActive ? 'Parar Evento' : 'Evento Galaxy'; }
+    function createGalaxy() { const vertices = []; for (let i = 0; i < 10000; i++) { const x = THREE.MathUtils.randFloatSpread(2000); const y = THREE.MathUtils.randFloatSpread(2000); const z = THREE.MathUtils.randFloatSpread(2000); vertices.push(x, y, z); } const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+const material = new THREE.PointsMaterial({ color: 0xffffff, size: 1.5 }); stars = new THREE.Points(geometry, material); stars.visible = false; scene.add(stars); }
+    function toggleGalaxyEvent() { console.warn("toggleGalaxyEvent está depreciada. Use startEvent('Galaxy') ou endEvent()."); }
 
     let animationTime = 0;
-    setInterval(spawnBrainrot, 5000); 
-    setInterval(() => { let totalToCollect = 0; for (const brainrot of activeBrainrots) { if(brainrot.userData.state === 'generating' && brainrot.userData.ownerId === MY_PLAYER_ID) { brainrot.userData.accumulatedMoney += brainrot.userData.generation; } if(brainrot.userData.ownerId === MY_PLAYER_ID) { totalToCollect += brainrot.userData.accumulatedMoney; } } const collectionLabel = document.getElementById('collection-label'); if(collectionLabel) collectionLabel.textContent = `$${Math.floor(totalToCollect)} para Coletar`; }, 1000);
+    setInterval(spawnBrainrot, 5000);
+    setInterval(() => { let totalToCollect = 0; for (const brainrot of activeBrainrots) { if(brainrot.userData.state === 'generating' && (brainrot.userData.ownerId === MY_PLAYER_ID || brainrot.userData.ownerId === 'brasil')) { brainrot.userData.accumulatedMoney += brainrot.userData.generation; } if(brainrot.userData.ownerId === MY_PLAYER_ID) { totalToCollect += brainrot.userData.accumulatedMoney; } } const collectionLabel = document.getElementById('collection-label'); if(collectionLabel) collectionLabel.textContent = `$${Math.floor(totalToCollect)} para Coletar`; }, 1000);
 
     createGalaxy();
+    populateShop();
+
     function animate() {
         const delta = clock.getDelta();
         requestAnimationFrame(animate);
 
-        let closestBrainrot = null; let minDistance = 6; 
-        for (let i = activeBrainrots.length - 1; i >= 0; i--) { 
-            const brainrot = activeBrainrots[i]; 
-            if (brainrot.userData.state === 'onConveyor') { brainrot.position.z += 3 * delta; const distanceToPlayer = player.position.distanceTo(brainrot.position); if (distanceToPlayer < minDistance) { minDistance = distanceToPlayer; closestBrainrot = brainrot; } if (brainrot.position.z > mapSize / 2) { brainrot.children.find(c => c.isCSS2DObject).element.remove(); scene.remove(brainrot); activeBrainrots.splice(i, 1); } 
+        if (activeEvents.has('Taco')) {
+            for (let i = tacoMeshes.length - 1; i >= 0; i--) {
+                const tacoObj = tacoMeshes[i];
+
+                if (!tacoObj.onGround) {
+                    tacoObj.velocity.add(tacoObj.gravity.clone().multiplyScalar(delta));
+                }
+
+                tacoObj.mesh.position.add(tacoObj.velocity.clone().multiplyScalar(delta));
+
+                for (const brainrot of activeBrainrots) {
+                    if (!brainrot.userData.onTaco) {
+                        const distance = tacoObj.mesh.position.distanceTo(brainrot.position);
+                        if (distance < 1.5) {
+                            const labelDiv = brainrot.children.find(c => c.isCSS2DObject).element;
+                            labelDiv.innerHTML += '<br>🌮';
+                            brainrot.userData.onTaco = true;
+                            console.log(`Taco caiu em cima de ${brainrot.userData.name}!`);
+                        }
+                    }
+                }
+
+                if (tacoObj.mesh.position.y <= 0.75 && !tacoObj.onGround) {
+                    tacoObj.mesh.position.y = 0.75;
+                    tacoObj.onGround = true;
+                    tacoObj.velocity.set(0, 0, 0);
+                    tacoObj.gravity.set(0, 0, 0);
+                }
+            }
+        }
+
+        let closestBrainrot = null; let minDistance = 6;
+        for (let i = activeBrainrots.length - 1; i >= 0; i--) {
+            const brainrot = activeBrainrots[i];
+            if (brainrot.userData.state === 'onConveyor') { brainrot.position.z += 3 * delta; const distanceToPlayer = player.position.distanceTo(brainrot.position); if (distanceToPlayer < minDistance) { minDistance = distanceToPlayer; closestBrainrot = brainrot; } if (brainrot.position.z > mapSize / 2) { brainrot.children.find(c => c.isCSS2DObject).element.remove(); scene.remove(brainrot); activeBrainrots.splice(i, 1); }
             } else if (brainrot.userData.state === 'movingToPad') {
                 const dest = brainrot.userData.destination;
-                if(brainrot.position.distanceTo(dest) > 0.1) { brainrot.position.lerp(dest, delta * 2.0); } 
+                if(brainrot.position.distanceTo(dest) > 0.1) { brainrot.position.lerp(dest, delta * 2.0); }
                 else { brainrot.position.copy(dest); brainrot.userData.state = 'generating'; }
             }
         }
         targetBrainrot = closestBrainrot;
         if (targetBrainrot) { buyButton.style.display = 'block'; const screenPosition = targetBrainrot.position.clone().project(camera); buyButton.style.left = `${(screenPosition.x + 1) / 2 * window.innerWidth - buyButton.offsetWidth / 2}px`; buyButton.style.top = `${(-screenPosition.y + 1) / 2 * window.innerHeight - buyButton.offsetHeight - 20}px`; } else { buyButton.style.display = 'none'; }
 
+        const playerBase = allBases.find(b => b.userData.ownerId === MY_PLAYER_ID);
+        if (playerBase && playerBase.userData.luckyBlock) {
+            const luckyBlock = playerBase.userData.luckyBlock;
+            const playerToLuckyBlock = player.position.distanceTo(luckyBlock.position);
+            if (playerToLuckyBlock < 5) {
+                luckyBlockButton.style.display = 'block';
+                const screenPosition = luckyBlock.position.clone().project(camera);
+                luckyBlockButton.style.left = `${(screenPosition.x + 1) / 2 * window.innerWidth - luckyBlockButton.offsetWidth / 2}px`;
+                luckyBlockButton.style.top = `${(-screenPosition.y + 1) / 2 * window.innerHeight - luckyBlockButton.offsetHeight - 20}px`;
+            } else {
+                luckyBlockButton.style.display = 'none';
+            }
+        }
+
         playerCollider.setFromCenterAndSize(player.position, playerSize);
         for(const trigger of laserTriggers) { const base = trigger.parent; if(base.userData.ownerId === MY_PLAYER_ID) { const triggerBox = new THREE.Box3().setFromObject(trigger); if(playerCollider.intersectsBox(triggerBox)) { activateLaser(base); } } }
-        
-        const playerBase = allBases.find(b => b.userData.ownerId === MY_PLAYER_ID);
+
         for(const pad of playerBase.userData.collectionPads) {
             const padBox = new THREE.Box3().setFromObject(pad);
             if(playerCollider.intersectsBox(padBox)) {
@@ -243,19 +1203,19 @@
                 }
             }
         }
-        
+
         const cameraDirection = new THREE.Vector3(); camera.getWorldDirection(cameraDirection); cameraDirection.y = 0; cameraDirection.normalize();
         const cameraRight = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), cameraDirection).normalize();
         const moveVector = cameraDirection.multiplyScalar(moveDirection.y).add(cameraRight.multiplyScalar(-moveDirection.x));
-        
+
         if (!onGround) { playerVelocity.y -= gravity * delta; }
         player.position.x += moveVector.x * playerSpeed * delta;
         player.position.y += playerVelocity.y * delta;
         player.position.z += moveVector.z * playerSpeed * delta;
-        checkCollisions(); 
+        checkCollisions();
 
         if (player.position.y < playerHeight / 2) { player.position.y = playerHeight / 2; playerVelocity.y = 0; onGround = true; }
-        
+
         if (moveDirection.length() > 0.1) { player.rotation.y = Math.atan2(moveVector.x, moveVector.z); animationTime += delta * 10; }
         const walkAmplitude = 0.6; const { leftArm, rightArm, leftLeg, rightLeg } = player.userData.limbs;
         if (moveDirection.length() > 0.1) { leftArm.rotation.x = Math.sin(animationTime) * walkAmplitude; rightArm.rotation.x = -Math.sin(animationTime) * walkAmplitude; leftLeg.rotation.x = -Math.sin(animationTime) * walkAmplitude; rightLeg.rotation.x = Math.sin(animationTime) * walkAmplitude; } else { leftArm.rotation.x = THREE.MathUtils.lerp(leftArm.rotation.x, 0, delta * 10); rightArm.rotation.x = THREE.MathUtils.lerp(rightArm.rotation.x, 0, delta * 10); leftLeg.rotation.x = THREE.MathUtils.lerp(leftLeg.rotation.x, 0, delta * 10); rightLeg.rotation.x = THREE.MathUtils.lerp(rightLeg.rotation.x, 0, delta * 10); }
@@ -266,15 +1226,15 @@
         renderer.render(scene, camera);
         labelRenderer.render(scene, camera);
     }
-    
-    // --- FUNÇÃO DE COLISÃO ATUALIZADA ---
+
     function checkCollisions() {
         playerCollider.setFromCenterAndSize(player.position, playerSize);
         for (const collider of colliders) {
             const colliderBox = new THREE.Box3().setFromObject(collider);
-            
-            if(collider.userData.isDoor && collider.userData.ownerId === MY_PLAYER_ID) continue; 
+
+            if(collider.userData.isDoor && collider.userData.ownerId === MY_PLAYER_ID) continue;
             if(collider.userData.isLaser && collider.userData.ownerId === MY_PLAYER_ID) continue;
+            if(collider.userData.isLuckyBlock && collider.userData.ownerId === MY_PLAYER_ID) continue;
 
             if (playerCollider.intersectsBox(colliderBox)) {
                 const intersection = new THREE.Box3();
@@ -285,12 +1245,11 @@
 
                 const playerCenter = new THREE.Vector3(); playerCollider.getCenter(playerCenter);
                 const colliderCenter = new THREE.Vector3(); colliderBox.getCenter(colliderCenter);
-                const direction = new THREE.Vector3().subVectors(playerCentercolliderCenter);
+                const direction = new THREE.Vector3().subVectors(playerCenter, colliderCenter);
 
                 if (penetration.x < penetration.y && penetration.x < penetration.z) {
                     player.position.x += (direction.x > 0 ? 1 : -1) * penetration.x;
                 } else if (penetration.y < penetration.x && penetration.y < penetration.z) {
-                    // Impede de grudar no chão/teto
                     playerVelocity.y = 0;
                     player.position.y += (direction.y > 0 ? 1 : -1) * penetration.y;
                 } else {
@@ -299,7 +1258,7 @@
             }
         }
     }
-    
+
     function activateLaser(baseGroup) {
         if(baseGroup.userData.laserActive) return;
         baseGroup.userData.laserActive = true;
@@ -317,6 +1276,8 @@
             baseGroup.userData.laserActive = false;
         }, 60000);
     }
+
+    luckyBlockButton.addEventListener('click', openLuckyBlock);
 
     animate();
     window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); labelRenderer.setSize(window.innerWidth, window.innerHeight); });
